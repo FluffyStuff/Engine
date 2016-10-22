@@ -205,6 +205,7 @@ public class OpenGLRenderer : RenderTarget
 
         program.apply_scene();
         bool scissors = false;
+        float aspect = (float)scene.screen_size.width / scene.screen_size.height;
 
         foreach (RenderObject2D obj in scene.objects)
         {
@@ -226,28 +227,28 @@ public class OpenGLRenderer : RenderTarget
 
             Type type = obj.get_type();
             if (type == typeof(RenderImage2D))
-                render_image_2D((RenderImage2D)obj, program);
+                render_image_2D((RenderImage2D)obj, program, aspect);
             else if (type == typeof(RenderLabel2D))
-                render_label_2D((RenderLabel2D)obj, program, scene.screen_size);
+                render_label_2D((RenderLabel2D)obj, program, scene.screen_size, aspect);
             else if (type == typeof(RenderRectangle2D))
-                render_rectangle_2D((RenderRectangle2D)obj, program);
+                render_rectangle_2D((RenderRectangle2D)obj, program, aspect);
         }
 
         if (scissors)
             glDisable(GL_SCISSOR_TEST);
     }
 
-    private void render_image_2D(RenderImage2D obj, OpenGLShaderProgram2D program)
+    private void render_image_2D(RenderImage2D obj, OpenGLShaderProgram2D program, float aspect)
     {
         OpenGLTextureResourceHandle texture_handle = (OpenGLTextureResourceHandle)get_texture(obj.texture.handle);
         glBindTexture(GL_TEXTURE_2D, (GLuint)texture_handle.handle);
 
-        Mat3 model_transform = Calculations.get_model_matrix_3(obj.position, obj.rotation, obj.scale);
+        Mat3 model_transform = Calculations.get_model_matrix_3(obj.position, obj.rotation, obj.scale, aspect);
 
         program.render_object(model_transform, obj.diffuse_color, true);
     }
 
-    private void render_label_2D(RenderLabel2D label, OpenGLShaderProgram2D program, Size2i screen_size)
+    private void render_label_2D(RenderLabel2D label, OpenGLShaderProgram2D program, Size2i screen_size, float aspect)
     {
         OpenGLLabelResourceHandle label_handle = (OpenGLLabelResourceHandle)get_label(label.reference.handle);
         glBindTexture(GL_TEXTURE_2D, label_handle.handle);
@@ -264,14 +265,14 @@ public class OpenGLRenderer : RenderTarget
         if (label.info.size.height % 2 != screen_size.height % 2)
             p.y += 1.0f / screen_size.height;
 
-        Mat3 model_transform = Calculations.get_model_matrix_3(p, label.rotation, label.scale);
+        Mat3 model_transform = Calculations.get_model_matrix_3(p, label.rotation, label.scale, aspect);
 
         program.render_object(model_transform, label.diffuse_color, true);
     }
 
-    private void render_rectangle_2D(RenderRectangle2D rectangle, OpenGLShaderProgram2D program)
+    private void render_rectangle_2D(RenderRectangle2D rectangle, OpenGLShaderProgram2D program, float aspect)
     {
-        Mat3 model_transform = Calculations.get_model_matrix_3(rectangle.position, rectangle.rotation, rectangle.scale);
+        Mat3 model_transform = Calculations.get_model_matrix_3(rectangle.position, rectangle.rotation, rectangle.scale, aspect);
         program.render_object(model_transform, rectangle.diffuse_color, false);
     }
 

@@ -6,6 +6,7 @@ public abstract class RenderWindow
     private bool running;
     private GLib.Timer timer;
     private float last_time = 0;
+    private Vec2i _cursor_position;
 
     public RenderWindow(IWindowTarget window, RenderTarget renderer)
     {
@@ -147,7 +148,9 @@ public abstract class RenderWindow
         Cursor.get_relative_state(ref rx, ref ry);
         Cursor.get_state(ref ax, ref ay);
 
-        MouseMoveArgs mouse = new MouseMoveArgs(Vec2i(ax, size.height - ay), Vec2i(rx, -ry), size);
+        _cursor_position = Vec2i(ax, size.height - ay);
+
+        MouseMoveArgs mouse = new MouseMoveArgs(cursor_position, Vec2i(rx, -ry), size);
         main_view.mouse_move(mouse);
 
         if (mouse.cursor_type != CursorType.UNDEFINED)
@@ -167,11 +170,6 @@ public abstract class RenderWindow
     public void set_cursor_hidden(bool hidden)
     {
         window.set_cursor_hidden(hidden);
-    }
-
-    public void set_cursor_position(int x, int y)
-    {
-        window.set_cursor_position(x, y);
     }
 
     public void start_text_input()
@@ -208,4 +206,13 @@ public abstract class RenderWindow
     public bool fullscreen { get { return window.fullscreen; } set { window.fullscreen = value; } }
     public Color back_color { get; set; }
     public Size2i size { get { return window.size; } }
+    public Vec2i cursor_position
+    {
+        get { return _cursor_position; }
+        set
+        {
+            _cursor_position = value;
+            window.set_cursor_position(value.x, value.y);
+        }
+    }
 }

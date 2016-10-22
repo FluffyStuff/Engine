@@ -15,7 +15,7 @@ public abstract class Container : Object
     protected weak RenderWindow? parent_window;
     private weak Container? parent;
 
-    public void add_child(Container? child)
+    public void add_child(Container child)
     {
         child.set_parent(this);
         child.added();
@@ -253,6 +253,15 @@ public abstract class Container : Object
         {
             _resize_style = value;
             resize();
+        }
+    }
+
+    public Vec2 normal_position
+    {
+        get
+        {
+            return Vec2(parent.size.width  * outer_anchor.x - size.width  * inner_anchor.x + position.x,
+                        parent.size.height * outer_anchor.y - size.height * inner_anchor.y + position.y);
         }
     }
 

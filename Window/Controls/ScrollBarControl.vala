@@ -7,8 +7,8 @@ public class ScrollBarControl : Control
     private int _current_value = 10;
     private int _scroll_amount = 1;
 
-    private GameMenuButton up_button;
-    private GameMenuButton down_button;
+    private MenuButton up_button;
+    private MenuButton down_button;
     private ScrollRectangle scroll_rect;
 
     public signal void value_changed(ScrollBarControl scroll_bar);
@@ -25,13 +25,13 @@ public class ScrollBarControl : Control
         background.color = Color(0.5f, 0, 0, 1);
         background.resize_style = ResizeStyle.RELATIVE;
 
-        up_button = new GameMenuButton(vertical ? "UpButton" : "Next");
+        up_button = new MenuButton(vertical ? "UpButton" : "Next");
         add_child(up_button);
         up_button.inner_anchor = Vec2(vertical ? 0.5f : 1, vertical ? 1 : 0.5f);
         up_button.outer_anchor = Vec2(vertical ? 0.5f : 1, vertical ? 1 : 0.5f);
         up_button.clicked.connect(up_pressed);
 
-        down_button = new GameMenuButton(vertical ? "DownButton" : "Prev");
+        down_button = new MenuButton(vertical ? "DownButton" : "Prev");
         add_child(down_button);
         down_button.inner_anchor = Vec2(vertical ? 0.5f : 0, vertical ? 0 : 0.5f);
         down_button.outer_anchor = Vec2(vertical ? 0.5f : 0, vertical ? 0 : 0.5f);

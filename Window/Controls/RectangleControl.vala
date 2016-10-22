@@ -19,4 +19,9 @@ public class RectangleControl : EndControl
     }
 
     public override Size2 end_size { get { return Size2(100, 100); } }
+    public float rotation
+    {
+        get { return rectangle.rotation; }
+        set { rectangle.rotation = value; }
+    }
 }

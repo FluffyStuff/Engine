@@ -25,5 +25,11 @@ class ImageControl : EndControl
         set { image.diffuse_color = value; }
     }
 
+    public float rotation
+    {
+        get { return image.rotation; }
+        set { image.rotation = value; }
+    }
+
     public override Size2 end_size { get { return Size2(image.texture.size.width, image.texture.size.height); } }
 }

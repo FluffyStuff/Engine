@@ -395,10 +395,14 @@ public class Calculations
         return new Mat3.with_array(vals);
     }
 
-    public static Mat3 get_model_matrix_3(Vec2 position, float rotation, Size2 scale)
+    public static Mat3 get_model_matrix_3(Vec2 position, float rotation, Size2 scale, float aspect)
     {
-        Mat3 rot = rotation_matrix_3(rotation * (float)Math.PI);
-        return rot.mul_mat(scale_matrix_3(scale))/*.mul_mat(rot)*/.mul_mat(translation_matrix_3(position));
+        Mat3 s = scale_matrix_3(scale);
+        Mat3 r = rotation_matrix_3(rotation * (float)Math.PI);
+        Mat3 a = scale_matrix_3(Size2(1, aspect)); // Fix aspect after rotation
+        Mat3 p = translation_matrix_3(position);
+
+        return s.mul_mat(r).mul_mat(a).mul_mat(p);
     }
 
     public static Vec3 rotation_mod(Vec3 rotation)

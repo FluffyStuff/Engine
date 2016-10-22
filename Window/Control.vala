@@ -26,12 +26,22 @@ public abstract class Control : Container
         if (mouse.handled || !visible || !selectable)
         {
             hovering = false;
-            return;
+
+            if (!mouse_down)
+                return;
         }
 
         if (!hover_check(mouse.position) && !mouse_down)
         {
             hovering = false;
+
+            if (!mouse_down)
+                return;
+        }
+
+        if (mouse_down && !hovering)
+        {
+            on_mouse_move(Vec2(mouse.position.x - rect.x, mouse.position.y - rect.y));
             return;
         }
 
@@ -54,6 +64,9 @@ public abstract class Control : Container
 
     public override void do_mouse_event(MouseEventArgs mouse)
     {
+        if (!mouse.down && mouse_down)
+			on_mouse_up(Vec2(mouse.position.x - rect.x, mouse.position.y - rect.y));
+
         if (mouse.handled || !visible || !selectable)
         {
             mouse_down = false;
@@ -82,15 +95,14 @@ public abstract class Control : Container
         {
             mouse_down = true;
             do_mouse_down(Vec2(mouse.position.x - rect.x, mouse.position.y - rect.y));
-            return;
+			return;
         }
-
-        on_mouse_up(Vec2(mouse.position.x - rect.x, mouse.position.y - rect.y));
-
-        if (mouse_down)
-            click(Vec2(mouse.position.x - rect.x, mouse.position.y - rect.y));
-
-        mouse_down = false;
+		
+		if (mouse_down)
+		{
+			mouse_down = false;
+			click(Vec2(mouse.position.x - rect.x, mouse.position.y - rect.y));
+		}
     }
 
     public override void do_key_press(KeyArgs key)
@@ -139,7 +151,7 @@ public abstract class Control : Container
         on_focus_lost();
     }
 
-    private bool hover_check(Vec2i point)
+    protected bool hover_check(Vec2i point)
     {
         if (!enabled || !visible || !selectable)
             return false;
@@ -200,7 +212,7 @@ public abstract class EndControl : Control
     public override void resized()
     {
         Vec2 new_pos = Vec2((rect.x + rect.width / 2) / window_size.width * 2 - 1, (rect.y + rect.height / 2) / window_size.height * 2 - 1);
-        Size2 new_scale = Size2(rect.width / window_size.width, rect.height / window_size.height);
+        Size2 new_scale = Size2(rect.width / window_size.width, rect.height / window_size.width);
 
         set_end_rect(Rectangle.vec(new_pos, new_scale));
     }
