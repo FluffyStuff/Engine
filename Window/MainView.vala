@@ -59,6 +59,14 @@ public class MouseMoveArgs
 
 public class MouseReference {}
 
+public enum CursorType
+{
+    UNDEFINED,
+    NORMAL,
+    HOVER,
+    CARET
+}
+
 public class KeyArgs
 {
     public KeyArgs(ScanCode scancode, KeyCode keycode, Modifier modifiers, bool repeat, bool down)

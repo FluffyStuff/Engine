@@ -13,11 +13,3 @@ public interface IWindowTarget : Object
     public abstract void start_text_input();
     public abstract void stop_text_input();
 }
-
-public enum CursorType
-{
-    UNDEFINED,
-    NORMAL,
-    HOVER,
-    CARET
-}

@@ -66,7 +66,6 @@ public abstract class Container : Object
             children[i].render(state, scene);
     }
 
-
     public void mouse_event(MouseEventArgs mouse)
     {
         if (!visible)
@@ -138,6 +137,33 @@ public abstract class Container : Object
 
         resized();
     }
+
+    public Vec2 to_parent_local(Vec2 global)
+    {
+        if (parent != null)
+            global = parent.to_local(global);
+        return global;
+    }
+
+    public Vec2 to_local(Vec2 global)
+    {
+        global = global.minus(position);
+        if (parent != null)
+        {
+            //global = global.minus(Vec2(outer_anchor.x * parent.size.width, outer_anchor.y * parent.size.height));
+            global = parent.to_local(global);
+        }
+
+        return global;
+    }
+
+    /*public Vec2 to_global(Vec2 local)
+    {
+        if (parent != null)
+            local = parent.to_global(local.plus(parent.position));
+
+        return local;
+    }*/
 
     protected void start_text_input()
     {
