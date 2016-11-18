@@ -177,6 +177,18 @@ public class Networking : Object
             buffer[i] = (uint8)(n >> ((bytes - i - 1) * 8));
         return buffer;
     }
+
+    public static uint8[] float_to_data(float f)
+    {
+        int bytes = 4;
+
+        uint8[] buffer = new uint8[bytes];
+        uint8* p = (uint8*)(&f);
+        for (int i = 0; i < bytes; i++)
+            buffer[i] = p[i];
+
+        return buffer;
+    }
 }
 
 public class MessageSignal
@@ -255,7 +267,7 @@ public class Connection : Object
                 uint32 length = input.read_uint32();
                 if (length > MAX_MESSAGE_LEN)
                 {
-                    print("Networking: Message length exceeds maximum, dropping connection");
+                    EngineLog.log(EngineLogType.NETWORK, "Networking", "Message length exceeds maximum, dropping connection");
                     break;
                 }
 
@@ -332,6 +344,11 @@ class UIntData
         return Networking.int_to_data(i);
     }
 
+    public static uint8[] serialize_float(float f)
+    {
+        return Networking.float_to_data(f);
+    }
+
     private class UInt
     {
         public UInt(uint8[] data) { this.data = data; }
@@ -341,6 +358,10 @@ class UIntData
 
 class DataUInt
 {
+    // (int)sizeof(int); Don't do this, so we maintain consistency over network
+    private static const int INT_LENGTH = 4;
+    private static const int FLOAT_LENGTH = 4;
+
     private uint8[] data;
     private int index = 0;
 
@@ -351,18 +372,25 @@ class DataUInt
 
     public int get_int() throws DataLengthError
     {
-        if (index + 4 > data.length)
+        if (index + INT_LENGTH > data.length)
             throw new DataLengthError.OUT_OF_RANGE("DataUInt: get_int doesn't have enough bytes left");
 
-        // Don't do this, so we maintain consistency over network
-        //int bytes = (int)sizeof(int);
-        int bytes = 4;
-
         int ret = 0;
-        for (int i = 0; i < bytes; i++)
-            ret += (int)data[index++] << ((bytes - i - 1) * 8);
+        for (int i = 0; i < INT_LENGTH; i++)
+            ret += (int)data[index++] << ((INT_LENGTH - i - 1) * 8);
 
         return ret;
+    }
+
+    public float get_float() throws DataLengthError
+    {
+        if (index + FLOAT_LENGTH > data.length)
+            throw new DataLengthError.OUT_OF_RANGE("DataUInt: get_float doesn't have enough bytes left");
+
+        float *f = &data[index];
+        index += FLOAT_LENGTH;
+
+        return *f;
     }
 
     public string get_string(int length) throws DataLengthError
@@ -399,31 +427,80 @@ class DataUInt
 public abstract class Serializable : Object
 {
     private const int MAX_PARAMS = 128;
+    private const int MAX_LIST_LENGTH = 128 * 1024;
 
-    public static Serializable? deserialize(uint8[] bytes)
+    public static Serializable? deserialize_string(string str)
+    {
+        return deserialize(str.data);
+    }
+
+    public static Serializable? deserialize(uint8[]? bytes)
     {
         try
         {
+            if (bytes == null || bytes.length == 0)
+                return null;
+
             DataUInt data = new DataUInt(bytes);
 
             int type_name_len = data.get_int();
             string type_name = data.get_string(type_name_len);
+
+            Type? type = Type.from_name(type_name);
+
+            if (!type.is_a(typeof(Serializable)))
+            {
+                EngineLog.log(EngineLogType.NETWORK, "Serializable", "Not serializable type (" + type_name + ")");
+                return null;
+            }
+
+            if (type.is_a(typeof(SerializableList)))
+            {
+                int item_count = data.get_int();
+                if (item_count > MAX_LIST_LENGTH)
+                {
+                    EngineLog.log(EngineLogType.NETWORK, "Serializable", "List length exceeds maximum, dropping message");
+                    return null;
+                }
+
+                if (item_count < 0)
+                {
+                    EngineLog.log(EngineLogType.NETWORK, "Serializable", "List length is negative, dropping message");
+                    return null;
+                }
+
+                Serializable[] items = new Serializable[item_count];
+
+                for (int i = 0; i < item_count; i++)
+                {
+                    int len = data.get_int();
+
+                    Serializable? sub_obj = null;
+
+                    if (len != 0)
+                    {
+                        uint8[] sub_data = data.get_data(len);
+                        sub_obj = deserialize(sub_data);
+                    }
+
+                    items[i] = sub_obj;
+                }
+
+                return new SerializableList<Serializable>(items);
+            }
+
             int param_count = data.get_int();
             if (param_count > MAX_PARAMS)
             {
-                print("Serializable: Param count exceeds maximum, dropping message");
+                EngineLog.log(EngineLogType.NETWORK, "Serializable", "Param count exceeds maximum, dropping message");
                 return null;
             }
 
             if (param_count < 0)
             {
-                print("Serializable: Param count is negative, dropping message");
+                EngineLog.log(EngineLogType.NETWORK, "Serializable", "Param count is negative, dropping message");
                 return null;
             }
-
-            Type? type = Type.from_name(type_name);
-            if (!type.is_a(typeof(Serializable)))
-                return null;
 
             Parameter?[] params = new Parameter?[param_count];
             string[] names = new string[param_count];
@@ -444,6 +521,12 @@ public abstract class Serializable : Object
                     val = Value(typeof(int));
                     int v = data.get_int();
                     val.set_int(v);
+                }
+                else if (data_type == DataType.FLOAT)
+                {
+                    val = Value(typeof(float));
+                    float v = data.get_float();
+                    val.set_float(v);
                 }
                 else if (data_type == DataType.BOOL)
                 {
@@ -504,7 +587,7 @@ public abstract class Serializable : Object
         }
         catch (Error e)
         {
-            print("Serializable: Error parsing message: " + e.message + "\n");
+            EngineLog.log(EngineLogType.NETWORK, "Serializable", "Error parsing message: " + e.message);
             return null;
         }
     }
@@ -519,6 +602,24 @@ public abstract class Serializable : Object
 
         data.add_data(UIntData.serialize_int(name_data.length));
         data.add_data(name_data);
+
+        if (this is SerializableList)
+        {
+            SerializableList<Serializable>? obj = (SerializableList<Serializable>)this;
+            Serializable[] objs = obj.to_array();
+
+            data.add_data(UIntData.serialize_int(objs.length));
+
+            for (int i = 0; i < objs.length; i++)
+            {
+                uint8[] obj_data = objs[i].serialize();
+                data.add_data(UIntData.serialize_int(obj_data.length));
+                data.add_data(obj_data);
+            }
+
+            return data.get_data();
+        }
+
         data.add_data(UIntData.serialize_int(specs.length));
 
         for (int i = 0; i < specs.length; i++)
@@ -528,7 +629,7 @@ public abstract class Serializable : Object
             data.add_data(UIntData.serialize_int(name_data.length));
             data.add_data(name_data);
 
-            if (p.value_type == typeof(int))
+            if (p.value_type == typeof(int) || p.value_type.is_enum())
             {
                 int type = (int)DataType.INT;
 
@@ -538,6 +639,17 @@ public abstract class Serializable : Object
 
                 data.add_data(UIntData.serialize_int(type));
                 data.add_data(UIntData.serialize_int(v));
+            }
+            else if (p.value_type == typeof(float))
+            {
+                int type = (int)DataType.FLOAT;
+
+                Value val = Value(typeof(float));
+                get_property(p.get_name(), ref val);
+                float v = val.get_float();
+
+                data.add_data(UIntData.serialize_int(type));
+                data.add_data(UIntData.serialize_float(v));
             }
             else if (p.value_type == typeof(bool))
             {
@@ -575,20 +687,17 @@ public abstract class Serializable : Object
                 Value val = Value(typeof(Serializable));
                 get_property(p.get_name(), ref val);
                 Serializable? obj = (Serializable?)val.get_object();
+                data.add_data(UIntData.serialize_int(type));
 
                 if (obj != null)
                 {
                     uint8[] obj_data = obj.serialize();
 
-                    data.add_data(UIntData.serialize_int(type));
                     data.add_data(UIntData.serialize_int(obj_data.length));
                     data.add_data(obj_data);
                 }
                 else
-                {
-                    data.add_data(UIntData.serialize_int(type));
                     data.add_data(UIntData.serialize_int(0));
-                }
             }
             else
             {
@@ -604,13 +713,36 @@ public abstract class Serializable : Object
     {
         UNKNOWN,
         INT,
+        FLOAT,
         BOOL,
         STRING,
-        SERIALIZABLE
+        LIST,
+        SERIALIZABLE,
     }
 }
 
 public class SerializableList<T> : Serializable
+{
+    public SerializableList(T[] items)
+    {
+        this.items = items;
+    }
+
+    public SerializableList.empty()
+    {
+        this.items = new T[0];
+    }
+
+    // Deprecated
+    public T[] to_array()
+    {
+        return items;
+    }
+
+    public T[] items { get; protected set; }
+}
+
+/*public class SerializableList<T> : Serializable
 {
     public SerializableList(T[] objs)
     {
@@ -654,7 +786,7 @@ public class SerializableListItem : Serializable
 
     public Serializable item { get; protected set; }
     public SerializableListItem? next { get; set; }
-}
+}*/
 
 public class ObjInt : Serializable
 {

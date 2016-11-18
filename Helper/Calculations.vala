@@ -359,8 +359,6 @@ public class Calculations
         float s = (float)Math.sin(angle);
         float c = (float)Math.cos(angle);
 
-        //print("S: %f C: %f\n", s, c);
-
         float[] vals =
         {
              c, s, 0,

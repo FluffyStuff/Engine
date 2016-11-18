@@ -17,7 +17,7 @@ public class Engine : Object
 
         if (SDL.init(SDL.InitFlag.EVERYTHING) < 0)
         {
-            print("Engine: Could not init SDL!\n");
+            EngineLog.log(EngineLogType.ENGINE, "Engine", "Could not init SDL");
             return false;
         }
 
@@ -58,7 +58,7 @@ public class Engine : Object
 
         if (GLEW.init())
         {
-            print("Engine: Could not init GLEW!\n");
+            EngineLog.log(EngineLogType.ENGINE, "Engine", "Could not init GLEW");
             return null;
         }
 

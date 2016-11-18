@@ -97,7 +97,7 @@ public class OpenGLShaderProgram3D
         uint err = glGetError();
         if (err != 0 && err != 0x500)
         {
-            print("OpenGLShaderProgram3D: GL shader program linkage failure! (%u)\n", err);
+            EngineLog.log(EngineLogType.RENDERING, "OpenGLShaderProgram3D", "GL shader program linkage failure (" + err.to_string() + ")");
             return false;
         }
 

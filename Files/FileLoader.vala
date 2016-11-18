@@ -29,6 +29,28 @@ public class FileLoader
         return l;
     }
 
+    public static uint8[]? load_data(string name)
+    {
+        File file = File.new_for_path(name);
+        if (!file.query_exists())
+            return null;
+
+        try
+        {
+            FileInputStream fis = file.read();
+            fis.seek(0, SeekType.END);
+            var t = fis.tell();
+            fis.seek(0, SeekType.SET);
+            uint8[] data = new uint8[t];
+            fis.read(data);
+
+            return data;
+        }
+        catch {}
+
+        return null;
+    }
+
     public static FileWriter? open(string name)
     {
         try
@@ -46,7 +68,7 @@ public class FileLoader
                 catch {} // Directory might already exist
             }
 
-            FileOutputStream stream = file.create (FileCreateFlags.REPLACE_DESTINATION);
+            FileOutputStream stream = file.create(FileCreateFlags.REPLACE_DESTINATION);
 
             return new FileWriter(stream);
         }
@@ -93,7 +115,10 @@ public class FileLoader
                     files.add(info.get_name());
             }
         }
-        catch {}
+        catch
+        {
+            EngineLog.log(EngineLogType.DEBUG, "FileLoader", "Could not get files in " + name);
+        }
 
         return files.to_array();
     }
@@ -118,11 +143,11 @@ public class FileWriter
         close();
     }
 
-    public bool write(string text)
+    public bool write_data(uint8[] data)
     {
         try
         {
-            stream.write(text.data);
+            stream.write(data);
         }
         catch
         {
@@ -137,10 +162,16 @@ public class FileWriter
         return write(line + "\n");
     }
 
+    public bool write(string text)
+    {
+        return write_data(text.data);
+    }
+
     public void close()
     {
         try
         {
+            stream.flush();
             stream.close();
         }
         catch {}

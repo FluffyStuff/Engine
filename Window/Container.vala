@@ -1,5 +1,6 @@
 public abstract class Container : Object
 {
+    private bool _loaded = false;
     private Vec2 _position = Vec2(0, 0);
     private Size2 _size = Size2(1, 1);
     private Vec2 _inner_anchor = Vec2(0.5f, 0.5f);
@@ -18,7 +19,9 @@ public abstract class Container : Object
     public void add_child(Container child)
     {
         child.set_parent(this);
-        child.added();
+        if (!child.loaded)
+            child.added();
+        child._loaded = true;
         child.resize();
         children.add(child);
     }
@@ -26,7 +29,9 @@ public abstract class Container : Object
     public void add_child_back(Container child)
     {
         child.set_parent(this);
-        child.added();
+        if (!child.loaded)
+            child.added();
+        child._loaded = true;
         child.resize();
         children.insert(0, child);
     }
@@ -136,6 +141,7 @@ public abstract class Container : Object
             child.resize();
 
         resized();
+        size_changed();
     }
 
     public Vec2 to_parent_local(Vec2 global)
@@ -191,13 +197,16 @@ public abstract class Container : Object
     protected virtual void resized() {}
     protected virtual void do_render(RenderState state, RenderScene2D scene) {}
     protected virtual void do_process(DeltaArgs delta) {}
-    protected virtual void do_mouse_event(MouseEventArgs mouse) { }
-    protected virtual void do_mouse_move(MouseMoveArgs mouse) { }
-    protected virtual void do_key_press(KeyArgs key) { }
-    protected virtual void do_text_input(TextInputArgs text) { }
-    protected virtual void do_text_edit(TextEditArgs text) { }
+    protected virtual void do_mouse_event(MouseEventArgs mouse) {}
+    protected virtual void do_mouse_move(MouseMoveArgs mouse) {}
+    protected virtual void do_key_press(KeyArgs key) {}
+    protected virtual void do_text_input(TextInputArgs text) {}
+    protected virtual void do_text_edit(TextEditArgs text) {}
 
     protected ResourceStore store { get { return parent_window.store; } }
+
+    public signal void visible_changed();
+    public signal void size_changed();
 
     protected Rectangle parent_rect
     {
@@ -313,7 +322,17 @@ public abstract class Container : Object
         }
     }
 
-    public bool visible { get { return _visible; } set { _visible = value; } }
+    public bool visible
+    {
+        get { return _visible; }
+        set
+        {
+            _visible = value;
+            visible_changed();
+        }
+    }
+
+    public bool loaded { get { return _loaded; } }
 }
 
 public enum ResizeStyle

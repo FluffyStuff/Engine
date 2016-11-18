@@ -30,7 +30,7 @@ class OpenGLShader
         string[] source = FileLoader.load(file);
         if (source == null || source.length == 0)
         {
-            print("OpenGLShader: Could not load shader file! (%s)\n", shader_type.to_string());
+            EngineLog.log(EngineLogType.RENDERING, "OpenGLShader", "Could not load shader file (" + shader_type.to_string() + ")");
             return false;
         }
 
@@ -47,8 +47,6 @@ class OpenGLShader
 
         if (success[0] != 1)
         {
-            print("OpenGLShader: %s shader compilation failure!\n", shader_type.to_string());
-
             int log_size[1];
             glGetShaderiv(handle, GL_INFO_LOG_LENGTH, log_size);
             uint8[] error_log = new uint8[log_size[0]];
@@ -56,8 +54,8 @@ class OpenGLShader
             int actual_size[1];
             glGetShaderInfoLog(handle, log_size[0], actual_size, error_log);
 
-            for (int i = 0; i < log_size[0]; i++)
-                print("%c", (uchar)error_log[i]);
+            string text = (string)error_log;
+            EngineLog.log(EngineLogType.RENDERING, "OpenGLShader", shader_type.to_string() + " shader compilation failure: " + text);
 
             return false;
         }

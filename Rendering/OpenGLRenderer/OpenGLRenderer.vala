@@ -34,7 +34,7 @@ public class OpenGLRenderer : RenderTarget
     {
         if (glCreateShader == null)
         {
-            print("OpenGLRenderer: Invalid GL context!\n");
+            EngineLog.log(EngineLogType.RENDERING, "OpenGLRenderer", "Invalid GL context");
             return false;
         }
 

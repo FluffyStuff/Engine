@@ -48,8 +48,10 @@ public class ScrollBarControl : Control
 
     protected override void resized()
     {
-        up_button.size = Size2(size.height, size.height);
-        down_button.size = Size2(size.height, size.height);
+        float f = vertical ? size.width : size.height;
+
+        up_button.size = Size2(f, f);
+        down_button.size = Size2(f, f);
 
         adjust_scroll();
     }
