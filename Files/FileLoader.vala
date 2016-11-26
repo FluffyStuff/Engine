@@ -2,6 +2,8 @@ using Gee;
 
 public class FileLoader
 {
+    private static const int MAX_SIZE = 10 * 1024 * 1024; // 10 MiB
+
     private FileLoader() {}
 
     public static string[]? load(string name)
@@ -37,11 +39,11 @@ public class FileLoader
 
         try
         {
+            int64 size = file.query_info(FileAttribute.STANDARD_SIZE, 0).get_size();
+            if (size == 0)
+                return new uint8[0];
             FileInputStream fis = file.read();
-            fis.seek(0, SeekType.END);
-            var t = fis.tell();
-            fis.seek(0, SeekType.SET);
-            uint8[] data = new uint8[t];
+            uint8[] data = new uint8[size];
             fis.read(data);
 
             return data;
@@ -126,6 +128,49 @@ public class FileLoader
     public static string array_to_string(string[] lines)
     {
         return string.joinv("\n", lines);
+    }
+
+    public static uint8[]? compress(uint8[]? data)
+    {
+        return compress_work(data, true);
+    }
+
+    public static uint8[]? uncompress(uint8[]? data)
+    {
+        return compress_work(data, false);
+    }
+
+    private static uint8[]? compress_work(uint8[] data, bool compress)
+    {
+        if (data == null)
+            return null;
+
+        int size = 1;
+        while (true)
+        {
+            if (data.length * size > MAX_SIZE) // Prevent compression bomb
+                return null;
+
+            size *= 2;
+
+            uint8[] dest = new uint8[data.length * size];
+            ulong dest_len = dest.length;
+            int ret;
+            if (compress)
+                ret = ZLib.Utility.  compress(dest, ref dest_len, data);
+            else
+                ret = ZLib.Utility.uncompress(dest, ref dest_len, data);
+
+            if (ret == ZLib.Status.OK)
+            {
+                uint8[] output = new uint8[dest_len];
+                for (int i = 0; i < dest_len; i++)
+                    output[i] = dest[i];
+                return output;
+            }
+            else if (ret != ZLib.Status.BUF_ERROR)
+                return null;
+        }
     }
 }
 

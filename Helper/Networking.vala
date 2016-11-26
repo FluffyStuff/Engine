@@ -198,7 +198,7 @@ public class MessageSignal
 
 public class Connection : Object
 {
-    private const uint32 MAX_MESSAGE_LEN = 1 * 1024 * 1024 * 1024; // 1 MiB
+    private const uint32 MAX_MESSAGE_LEN = 10 * 1024 * 1024; // 10 MiB
 
     public signal void message_received(Connection connection, Message message);
     public signal void closed(Connection connection);
@@ -317,6 +317,33 @@ class UIntData
         length += data.length;
     }
 
+    public void add_int(int i)
+    {
+        add_data(serialize_int(i));
+    }
+
+    public void add_float(float f)
+    {
+        add_data(serialize_float(f));
+    }
+
+    public void add_bool(bool b)
+    {
+        add_byte((uint8)b);
+    }
+
+    public void add_byte(uint8 b)
+    {
+        add_data(serialize_byte(b));
+    }
+
+    public void add_string(string s)
+    {
+        uint8[] str_data = serialize_string(s);
+        add_int(str_data.length);
+        add_data(str_data);
+    }
+
     public uint8[] get_data()
     {
         uint8[] ret = new uint8[length];
@@ -339,6 +366,11 @@ class UIntData
         return str.data;
     }
 
+    public static uint8[] serialize_byte(uint8 b)
+    {
+        return new uint8[]{b};
+    }
+
     public static uint8[] serialize_int(int i)
     {
         return Networking.int_to_data(i);
@@ -356,11 +388,12 @@ class UIntData
     }
 }
 
-class DataUInt
+public class DataUInt
 {
     // (int)sizeof(int); Don't do this, so we maintain consistency over network
     private static const int INT_LENGTH = 4;
     private static const int FLOAT_LENGTH = 4;
+    private static const int MAX_STRING_LENGTH = 1024 * 1024;
 
     private uint8[] data;
     private int index = 0;
@@ -368,6 +401,14 @@ class DataUInt
     public DataUInt(uint8[] data)
     {
         this.data = data;
+    }
+
+    public uint8 get_byte() throws DataLengthError
+    {
+        if (index >= data.length)
+            throw new DataLengthError.OUT_OF_RANGE("DataUInt: get_byte doesn't have enough bytes left");
+
+        return data[index++];
     }
 
     public int get_int() throws DataLengthError
@@ -393,12 +434,24 @@ class DataUInt
         return *f;
     }
 
-    public string get_string(int length) throws DataLengthError
+    public bool get_bool() throws DataLengthError
+    {
+        return get_byte() != 0;
+    }
+
+    public string get_string() throws DataLengthError
+    {
+        return get_string_length(get_int());
+    }
+
+    public string get_string_length(int length) throws DataLengthError
     {
         if (index + length > data.length)
             throw new DataLengthError.OUT_OF_RANGE("DataUInt: get_string doesn't have enough bytes left");
         else if (length < 0)
             throw new DataLengthError.NEGATIVE_LENGTH("DataUInt: get_string length is negative");
+        else if (length > MAX_STRING_LENGTH)
+            throw new DataLengthError.NEGATIVE_LENGTH("DataUInt: get_string length exceeds maximum");
 
         uint8[] str = new uint8[length + 1];
         str[length] = 0;
@@ -426,164 +479,166 @@ class DataUInt
 
 public abstract class Serializable : Object
 {
-    private const int MAX_PARAMS = 128;
-    private const int MAX_LIST_LENGTH = 128 * 1024;
+    private static const uint8 NULL_BYTE = 0xAA;
+    private static const uint8 NON_NULL_BYTE = 0x55;
+    private static const int MAX_PARAMS = 128;
+    private static const int MAX_LIST_LENGTH = 128 * 1024;
 
     public static Serializable? deserialize_string(string str)
     {
         return deserialize(str.data);
     }
 
-    public static Serializable? deserialize(uint8[]? bytes)
+    private static Serializable? get_object(Type type, DeserializationContext context) throws DataLengthError
+    {
+        if (!type.is_a(typeof(Serializable)))
+        {
+            EngineLog.log(EngineLogType.NETWORK, "Serializable", "Not serializable type (" + type.name() + ")");
+            return null;
+        }
+
+        if (context.get_byte() != NON_NULL_BYTE)
+            return null;
+
+        if (type.is_a(typeof(SerializableList)))
+        {
+            int item_count = context.get_int();
+            if (item_count > MAX_LIST_LENGTH)
+            {
+                EngineLog.log(EngineLogType.NETWORK, "Serializable", "List length exceeds maximum, dropping message");
+                return null;
+            }
+
+            if (item_count < 0)
+            {
+                EngineLog.log(EngineLogType.NETWORK, "Serializable", "List length is negative, dropping message");
+                return null;
+            }
+
+            Serializable[] items = new Serializable[item_count];
+
+            for (int i = 0; i < item_count; i++)
+            {
+                string? type_name = context.get_string();
+                if (type_name == null)
+                {
+                    items[i] = null;
+                    continue;
+                }
+
+                Type? list_type = Type.from_name(type_name);
+                items[i] = get_object(list_type, context);
+            }
+
+            return new SerializableList<Serializable>(items);
+        }
+
+        ParamSpec[] specs = get_params(type);
+        Parameter?[] params = new Parameter?[specs.length];
+
+        for (int i = 0; i < params.length; i++)
+        {
+            ParamSpec p = specs[i];
+
+            bool has_value = true;
+            Value val = Value(typeof(int));
+
+            if (p.value_type == typeof(int) || p.value_type.is_enum())
+                val.set_int(context.get_int());
+            else if (p.value_type == typeof(float))
+            {
+                val = Value(typeof(float));
+                val.set_float(context.get_float());
+            }
+            else if (p.value_type == typeof(bool))
+            {
+                val = Value(typeof(bool));
+                val.set_boolean(context.get_bool());
+            }
+            else if (p.value_type == typeof(string))
+            {
+                val = Value(typeof(string));
+                val.set_string(context.get_string());
+            }
+            else if (p.value_type.is_a(typeof(Serializable)))
+            {
+                val = Value(typeof(Serializable));
+                val.set_object(get_object(p.value_type, context));
+            }
+            else
+                has_value = false;
+
+            if (has_value)
+            {
+                params[i] = Parameter();
+                params[i].name = p.get_name();
+                params[i].value = val;
+            }
+            else
+                params[i] = null;
+        }
+
+        int count = 0;
+        for (int i = 0; i < params.length; i++)
+            if (params[i] != null)
+                count++;
+        Parameter[] p = new Parameter[count];
+        count = 0;
+        for (int i = 0; i < params.length; i++)
+            if (params[i] != null)
+                p[count++] = params[i];
+
+        Object obj = Object.newv(type, p);
+
+        return (Serializable)obj;
+    }
+
+    public static Serializable? deserialize(uint8[]? bytes_raw)
     {
         try
         {
-            if (bytes == null || bytes.length == 0)
+            if (bytes_raw == null || bytes_raw.length == 0)
                 return null;
+
+            uint8[] bytes = FileLoader.uncompress(bytes_raw);
 
             DataUInt data = new DataUInt(bytes);
 
-            int type_name_len = data.get_int();
-            string type_name = data.get_string(type_name_len);
-
-            Type? type = Type.from_name(type_name);
-
-            if (!type.is_a(typeof(Serializable)))
+            int count = data.get_int();
+            if (count == 0)
             {
-                EngineLog.log(EngineLogType.NETWORK, "Serializable", "Not serializable type (" + type_name + ")");
+                EngineLog.log(EngineLogType.NETWORK, "Serializable", "No root name, dropping message");
                 return null;
             }
 
-            if (type.is_a(typeof(SerializableList)))
+            if (count > MAX_LIST_LENGTH)
             {
-                int item_count = data.get_int();
-                if (item_count > MAX_LIST_LENGTH)
-                {
-                    EngineLog.log(EngineLogType.NETWORK, "Serializable", "List length exceeds maximum, dropping message");
-                    return null;
-                }
-
-                if (item_count < 0)
-                {
-                    EngineLog.log(EngineLogType.NETWORK, "Serializable", "List length is negative, dropping message");
-                    return null;
-                }
-
-                Serializable[] items = new Serializable[item_count];
-
-                for (int i = 0; i < item_count; i++)
-                {
-                    int len = data.get_int();
-
-                    Serializable? sub_obj = null;
-
-                    if (len != 0)
-                    {
-                        uint8[] sub_data = data.get_data(len);
-                        sub_obj = deserialize(sub_data);
-                    }
-
-                    items[i] = sub_obj;
-                }
-
-                return new SerializableList<Serializable>(items);
-            }
-
-            int param_count = data.get_int();
-            if (param_count > MAX_PARAMS)
-            {
-                EngineLog.log(EngineLogType.NETWORK, "Serializable", "Param count exceeds maximum, dropping message");
+                EngineLog.log(EngineLogType.NETWORK, "Serializable", "String table length exceeds maximum, dropping message");
                 return null;
             }
 
-            if (param_count < 0)
+            if (count < 0)
             {
-                EngineLog.log(EngineLogType.NETWORK, "Serializable", "Param count is negative, dropping message");
+                EngineLog.log(EngineLogType.NETWORK, "Serializable", "String table length is negative, dropping message");
                 return null;
             }
 
-            Parameter?[] params = new Parameter?[param_count];
-            string[] names = new string[param_count];
+            string[] strings = new string[count];
 
-            for (int i = 0; i < params.length; i++)
+            for (int i = 0; i < count; i++)
+                strings[i] = data.get_string();
+
+            DeserializationContext context = new DeserializationContext(strings, data);
+            string? type_name = context.get_string();
+            Type? type = null;
+
+            if (type_name == null || (type = Type.from_name(type_name)) == null)
             {
-                int name_len = data.get_int();
-                string name = data.get_string(name_len);
-                names[i] = name;
-
-                bool has_value = true;
-                Value val = Value(typeof(int));
-                int t = data.get_int();
-                DataType data_type = (DataType)t;
-
-                if (data_type == DataType.INT)
-                {
-                    val = Value(typeof(int));
-                    int v = data.get_int();
-                    val.set_int(v);
-                }
-                else if (data_type == DataType.FLOAT)
-                {
-                    val = Value(typeof(float));
-                    float v = data.get_float();
-                    val.set_float(v);
-                }
-                else if (data_type == DataType.BOOL)
-                {
-                    val = Value(typeof(bool));
-                    bool b = (bool)data.get_int();
-                    val.set_boolean(b);
-                }
-                else if (data_type == DataType.STRING)
-                {
-                    val = Value(typeof(string));
-                    int len = data.get_int();
-                    string str = data.get_string(len);
-                    val.set_string(str);
-                }
-                else if (data_type == DataType.SERIALIZABLE)
-                {
-                    val = Value(typeof(Serializable));
-                    int len = data.get_int();
-
-                    if (len != 0)
-                    {
-                        uint8[] sub_data = data.get_data(len);
-                        Serializable? sub_obj = deserialize(sub_data);
-                        val.set_object(sub_obj);
-                    }
-                    else
-                    {
-                        Object? obj = null;
-                        val.set_object(obj);
-                    }
-                }
-                else
-                    has_value = false;
-
-                if (has_value)
-                {
-                    params[i] = Parameter();
-                    params[i].name = names[i];
-                    params[i].value = val;
-                }
-                else
-                    params[i] = null;
+                EngineLog.log(EngineLogType.NETWORK, "Serializable", "Got null type name");
+                return null;
             }
 
-            int count = 0;
-            for (int i = 0; i < params.length; i++)
-                if (params[i] != null)
-                    count++;
-            Parameter[] p = new Parameter[count];
-            count = 0;
-            for (int i = 0; i < params.length; i++)
-                if (params[i] != null)
-                    p[count++] = params[i];
-
-            Object obj = Object.newv(type, p);
-
-            return (Serializable)obj;
+            return get_object(type, context);
         }
         catch (Error e)
         {
@@ -594,130 +649,233 @@ public abstract class Serializable : Object
 
     public uint8[] serialize()
     {
-        UIntData data = new UIntData();
+        SerializationContext context = new SerializationContext();
 
-        ObjectClass cls = (ObjectClass)(this.get_type()).class_ref();
-        ParamSpec[] specs = cls.list_properties();
-        uint8[] name_data = UIntData.serialize_string(get_type().name());
+        context.add_string(get_type().name());
+        serialize_sub(this, context);
 
-        data.add_data(UIntData.serialize_int(name_data.length));
-        data.add_data(name_data);
+        return FileLoader.compress(context.serialize());
+    }
 
-        if (this is SerializableList)
+    private static void serialize_sub(Serializable? obj, SerializationContext context)
+    {
+        context.add_byte(obj == null ? NULL_BYTE : NON_NULL_BYTE);
+
+        if (obj == null)
+            return;
+
+        if (obj is SerializableList)
         {
-            SerializableList<Serializable>? obj = (SerializableList<Serializable>)this;
-            Serializable[] objs = obj.to_array();
+            Serializable[] objs = (Serializable[])((SerializableList)obj).to_array();
 
-            data.add_data(UIntData.serialize_int(objs.length));
+            context.add_int(objs.length);
 
             for (int i = 0; i < objs.length; i++)
             {
-                uint8[] obj_data = objs[i].serialize();
-                data.add_data(UIntData.serialize_int(obj_data.length));
-                data.add_data(obj_data);
+                if (objs[i] == null)
+                    context.add_string(null);
+                else
+                {
+                    context.add_string(objs[i].get_type().name());
+                    serialize_sub(objs[i], context);
+                }
             }
 
-            return data.get_data();
+            return;
         }
 
-        data.add_data(UIntData.serialize_int(specs.length));
+        var specs = get_params(obj.get_type());
 
         for (int i = 0; i < specs.length; i++)
         {
             ParamSpec p = specs[i];
-            name_data = UIntData.serialize_string(p.get_name());
-            data.add_data(UIntData.serialize_int(name_data.length));
-            data.add_data(name_data);
 
             if (p.value_type == typeof(int) || p.value_type.is_enum())
             {
-                int type = (int)DataType.INT;
-
                 Value val = Value(typeof(int));
-                get_property(p.get_name(), ref val);
+                obj.get_property(p.get_name(), ref val);
                 int v = val.get_int();
 
-                data.add_data(UIntData.serialize_int(type));
-                data.add_data(UIntData.serialize_int(v));
+                context.add_int(v);
             }
             else if (p.value_type == typeof(float))
             {
-                int type = (int)DataType.FLOAT;
-
                 Value val = Value(typeof(float));
-                get_property(p.get_name(), ref val);
+                obj.get_property(p.get_name(), ref val);
                 float v = val.get_float();
 
-                data.add_data(UIntData.serialize_int(type));
-                data.add_data(UIntData.serialize_float(v));
+                context.add_float(v);
             }
             else if (p.value_type == typeof(bool))
             {
-                int type = (int)DataType.BOOL;
-
                 Value val = Value(typeof(bool));
-                get_property(p.get_name(), ref val);
+                obj.get_property(p.get_name(), ref val);
                 bool b = val.get_boolean();
 
-                data.add_data(UIntData.serialize_int(type));
-                data.add_data(UIntData.serialize_int((int)b));
+                context.add_bool(b);
             }
             else if (p.value_type == typeof(string))
             {
-                int type = (int)DataType.STRING;
-
                 Value val = Value(typeof(string));
-                get_property(p.get_name(), ref val);
-                string str = val.get_string();
+                obj.get_property(p.get_name(), ref val);
+                string? str = val.get_string();
 
-                uint8[] str_data;
-                if (str == null)
-                    str_data = new uint8[0];
-                else
-                    str_data = UIntData.serialize_string(str);
-
-                data.add_data(UIntData.serialize_int(type));
-                data.add_data(UIntData.serialize_int(str_data.length));
-                data.add_data(str_data);
+                context.add_string(str);
             }
             else if (p.value_type.is_a(typeof(Serializable)))
             {
-                int type = (int)DataType.SERIALIZABLE;
-
                 Value val = Value(typeof(Serializable));
-                get_property(p.get_name(), ref val);
-                Serializable? obj = (Serializable?)val.get_object();
-                data.add_data(UIntData.serialize_int(type));
+                obj.get_property(p.get_name(), ref val);
+                Serializable? o = (Serializable?)val.get_object();
 
-                if (obj != null)
-                {
-                    uint8[] obj_data = obj.serialize();
-
-                    data.add_data(UIntData.serialize_int(obj_data.length));
-                    data.add_data(obj_data);
-                }
-                else
-                    data.add_data(UIntData.serialize_int(0));
-            }
-            else
-            {
-                int type = (int)DataType.UNKNOWN;
-                data.add_data(UIntData.serialize_int(type));
+                serialize_sub(o, context);
             }
         }
-
-        return data.get_data();
     }
 
-    private enum DataType
+    public class SerializationContext
     {
-        UNKNOWN,
-        INT,
-        FLOAT,
-        BOOL,
-        STRING,
-        LIST,
-        SERIALIZABLE,
+        private UIntData data = new UIntData();
+        private int string_count = 0;
+        private Tree<string, ObjInt> tree = new Tree<string, ObjInt>.full((a, b) => { return strcmp (a, b); }, free, unref);
+
+        /*public void add_data(uint8[] d)
+        {
+            data.add_data(d);
+        }*/
+
+        public void add_int(int i)
+        {
+            data.add_int(i);
+        }
+
+        public void add_float(float f)
+        {
+            data.add_float(f);
+        }
+
+        public void add_byte(uint8 b)
+        {
+            data.add_byte(b);
+        }
+
+        public void add_bool(bool b)
+        {
+            data.add_bool(b);
+        }
+
+        // Adds a string to the string table and serializes the index
+        public void add_string(string? str)
+        {
+            if (str == null)
+            {
+                add_int(-1);
+                return;
+            }
+
+            ObjInt? o = tree.lookup(str);
+
+            if (o != null)
+            {
+                add_int(o.value);
+                return;
+            }
+
+            int index = string_count++;
+            tree.insert(str, new ObjInt(index));
+            add_int(index);
+        }
+
+        public uint8[] serialize()
+        {
+            UIntData out_data = new UIntData();
+            string[] strings = new string[string_count];
+            tree.@foreach((_key, _val) =>
+            {
+                unowned string key = (string) _key;
+                unowned ObjInt val = (ObjInt) _val;
+                strings[val.value] = key;
+                return false;
+            });
+
+            out_data.add_int(strings.length);
+
+            for (int i = 0; i < strings.length; i++)
+                out_data.add_string(strings[i]);
+
+            out_data.add_data(data.get_data());
+
+            return out_data.get_data();
+        }
+    }
+
+    class DeserializationContext
+    {
+        private string[] strings;
+        private DataUInt data;
+
+        public DeserializationContext(string[] strings, DataUInt data)
+        {
+            this.strings = strings;
+            this.data = data;
+        }
+
+        public int get_int() throws DataLengthError
+        {
+            return data.get_int();
+        }
+
+        public bool get_bool() throws DataLengthError
+        {
+            return data.get_bool();
+        }
+
+        public uint8 get_byte() throws DataLengthError
+        {
+            return data.get_byte();
+        }
+
+        public float get_float() throws DataLengthError
+        {
+            return data.get_float();
+        }
+
+        public string? get_string() throws DataLengthError
+        {
+            int index = get_int();
+            if (index == -1)
+                return null;
+
+            if (index < 0 || index >= strings.length)
+                throw new DataLengthError.OUT_OF_RANGE("DeserializationContext: get_string index is out of range");
+
+            return strings[index];
+        }
+    }
+
+    private static ParamSpec[] get_params(Type type)
+    {
+        string name = type.name();
+        ParamList? p = tree.lookup(name);
+
+        if (p != null)
+            return p.params;
+        ObjectClass cls = (ObjectClass)type.class_ref();
+        var props = cls.list_properties();
+        tree.insert(name, new ParamList(props));
+
+        return props;
+    }
+
+    private static Tree<string, ParamList> tree = new Tree<string, ParamList>((a, b) => { return strcmp (a, b); });
+    private class ParamList
+    {
+        public ParamList(ParamSpec[] params)
+        {
+            this.params = params;
+        }
+
+        public ParamSpec[] params { get; private set; }
     }
 }
 
@@ -742,52 +900,6 @@ public class SerializableList<T> : Serializable
     public T[] items { get; protected set; }
 }
 
-/*public class SerializableList<T> : Serializable
-{
-    public SerializableList(T[] objs)
-    {
-        SerializableListItem[] list = new SerializableListItem[objs.length];
-
-        for (int i = 0; i < objs.length; i++)
-            list[i] = new SerializableListItem((Serializable)objs[i]);
-        for (int i = 0; i < objs.length - 1; i++)
-            list[i].next = list[i + 1];
-
-        if (list.length > 0)
-            root = list[0];
-        else
-            root = null;
-    }
-
-    public T[] to_array()
-    {
-        ArrayList<Serializable> list = new ArrayList<Serializable>();
-
-        SerializableListItem? p = root;
-        while (p != null)
-        {
-            list.add(p.item);
-            p = p.next;
-        }
-
-        return (T[])list.to_array();
-    }
-
-    protected SerializableListItem? root { get; protected set; }
-}
-
-public class SerializableListItem : Serializable
-{
-    public SerializableListItem(Serializable item)
-    {
-        this.item = item;
-        next = null;
-    }
-
-    public Serializable item { get; protected set; }
-    public SerializableListItem? next { get; set; }
-}*/
-
 public class ObjInt : Serializable
 {
     public ObjInt(int value)
@@ -798,4 +910,4 @@ public class ObjInt : Serializable
     public int value { get; protected set; }
 }
 
-errordomain DataLengthError { OUT_OF_RANGE, NEGATIVE_LENGTH }
+public errordomain DataLengthError { OUT_OF_RANGE, NEGATIVE_LENGTH }
