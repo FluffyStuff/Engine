@@ -151,11 +151,11 @@ public class OpenGLRenderer : RenderTarget
         OpenGLTextureResourceHandle? texture_handle = null;
         if (obj.texture != null)
         {
-            texture_handle = (OpenGLTextureResourceHandle?)get_texture(obj.texture.handle);
+            texture_handle = obj.texture.handle as OpenGLTextureResourceHandle?;
             use_texture = true;
         }
 
-        OpenGLModelResourceHandle model_handle = (OpenGLModelResourceHandle)get_model(obj.model.handle);
+        OpenGLModelResourceHandle model_handle = obj.model.handle as OpenGLModelResourceHandle;
 
         if (texture_handle == null)
         {
@@ -180,8 +180,8 @@ public class OpenGLRenderer : RenderTarget
 
     private void render_label_3D(RenderLabel3D label, Mat4 transform, OpenGLShaderProgram3D program, ref int last_texture_handle, ref int last_array_handle)
     {
-        OpenGLLabelResourceHandle label_handle = (OpenGLLabelResourceHandle)get_label(label.reference.handle);
-        OpenGLModelResourceHandle model_handle = (OpenGLModelResourceHandle)get_model(label.model.handle);
+        OpenGLLabelResourceHandle label_handle = label.reference.handle as OpenGLLabelResourceHandle;
+        OpenGLModelResourceHandle model_handle = label.model.handle as OpenGLModelResourceHandle;
 
         if (last_texture_handle != label_handle.handle)
         {
@@ -240,7 +240,7 @@ public class OpenGLRenderer : RenderTarget
 
     private void render_image_2D(RenderImage2D obj, OpenGLShaderProgram2D program, float aspect)
     {
-        OpenGLTextureResourceHandle texture_handle = (OpenGLTextureResourceHandle)get_texture(obj.texture.handle);
+        OpenGLTextureResourceHandle texture_handle = obj.texture.handle as OpenGLTextureResourceHandle;
         glBindTexture(GL_TEXTURE_2D, (GLuint)texture_handle.handle);
 
         Mat3 model_transform = Calculations.get_model_matrix_3(obj.position, obj.rotation, obj.scale, aspect);
@@ -250,7 +250,7 @@ public class OpenGLRenderer : RenderTarget
 
     private void render_label_2D(RenderLabel2D label, OpenGLShaderProgram2D program, Size2i screen_size, float aspect)
     {
-        OpenGLLabelResourceHandle label_handle = (OpenGLLabelResourceHandle)get_label(label.reference.handle);
+        OpenGLLabelResourceHandle label_handle = label.reference.handle as OpenGLLabelResourceHandle;
         glBindTexture(GL_TEXTURE_2D, label_handle.handle);
 
         Vec2 p = label.position;
@@ -306,14 +306,32 @@ public class OpenGLRenderer : RenderTarget
 
     ///////////////////////////
 
-    protected override IModelResourceHandle do_load_model(ResourceModel model)
+    protected override IModelResourceHandle init_model(InputResourceModel model)
     {
+        return new OpenGLModelResourceHandle(model);
+    }
+
+    protected override ITextureResourceHandle init_texture(InputResourceTexture texture)
+    {
+        return new OpenGLTextureResourceHandle(texture);
+    }
+
+    protected override RenderTarget.LabelResourceHandle init_label()
+    {
+        return new OpenGLLabelResourceHandle();
+    }
+
+    protected override void do_load_model(IModelResourceHandle model)
+    {
+        OpenGLModelResourceHandle handle = model as OpenGLModelResourceHandle;
+        InputResourceModel resource = handle.model;
+
         int len = 10 * (int)sizeof(float);
         uint triangles[1];
 
         glGenBuffers(1, triangles);
         glBindBuffer(GL_ARRAY_BUFFER, triangles[0]);
-        glBufferData(GL_ARRAY_BUFFER, len * model.points.length, (GLvoid[])model.points, GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, len * resource.points.length, (GLvoid[])resource.points, GL_STATIC_DRAW);
 
         uint vao[1];
         OpenGLFunctions.glGenVertexArrays(1, vao);
@@ -326,22 +344,28 @@ public class OpenGLRenderer : RenderTarget
         glEnableVertexAttribArray(NORMAL_ATTRIBUTE);
         glVertexAttribPointer(NORMAL_ATTRIBUTE, 3, GL_FLOAT, false, len, (GLvoid[])(7 * sizeof(float)));
 
-        return new OpenGLModelResourceHandle(triangles[0], model.points.length, vao[0]);
+        handle.handle = triangles[0];
+        handle.triangle_count = resource.points.length;
+        handle.array_handle = vao[0];
+        handle.model = null;
     }
 
-    protected override ITextureResourceHandle do_load_texture(ResourceTexture texture)
+    protected override void do_load_texture(ITextureResourceHandle texture)
     {
-        int width = texture.size.width;
-        int height = texture.size.height;
+        OpenGLTextureResourceHandle handle = texture as OpenGLTextureResourceHandle;
+        InputResourceTexture resource = handle.texture;
+
+        int width = resource.size.width;
+        int height = resource.size.height;
 
         uint tex[1];
         glGenTextures(1, tex);
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, tex[0]);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB_ALPHA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, (GLvoid[])texture.data);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB_ALPHA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, (GLvoid[])resource.data);
 
-        /*if (!texture.tile)
+        /*if (!resource.tile)
         {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -353,21 +377,21 @@ public class OpenGLRenderer : RenderTarget
         if (anisotropic_filtering && anisotropic > 0)
             glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropic);
 
-        return new OpenGLTextureResourceHandle(tex[0]);
+        handle.handle = tex[0];
+        handle.texture = null;
     }
 
     protected override void do_load_label(ILabelResourceHandle label_handle, LabelBitmap label)
     {
-        OpenGLLabelResourceHandle handle = (OpenGLLabelResourceHandle)label_handle;
+        OpenGLLabelResourceHandle handle = label_handle as OpenGLLabelResourceHandle;
 
-        uint del[1] = { handle.handle };
+        uint tex[1] = { handle.handle };
         if (handle.created)
-            glDeleteTextures(1, del);
+            glDeleteTextures(1, tex);
 
         int width = label.size.width;
         int height = label.size.height;
 
-        uint tex[1];
         glGenTextures(1, tex);
 
         float aniso[1];
@@ -385,9 +409,34 @@ public class OpenGLRenderer : RenderTarget
         handle.handle = tex[0];
     }
 
-    protected override ILabelResourceHandle create_label(ResourceLabel label)
+    protected override void do_unload_model(IModelResourceHandle model)
     {
-        return new OpenGLLabelResourceHandle();
+        OpenGLModelResourceHandle handle = model as OpenGLModelResourceHandle;
+
+        uint triangles[] = { handle.handle };
+        uint vao[] = { handle.array_handle };
+
+        glDeleteBuffers(1, triangles);
+        OpenGLFunctions.glDeleteVertexArrays(1, vao);
+    }
+
+    protected override void do_unload_texture(ITextureResourceHandle label_handle)
+    {
+        OpenGLTextureResourceHandle handle = label_handle as OpenGLTextureResourceHandle;
+
+        uint tex[1] = { handle.handle };
+        glDeleteTextures(1, tex);
+    }
+
+    protected override void do_unload_label(ILabelResourceHandle label_handle)
+    {
+        OpenGLLabelResourceHandle handle = label_handle as OpenGLLabelResourceHandle;
+
+        if (handle.created)
+        {
+            uint tex[1] = { handle.handle };
+            glDeleteTextures(1, tex);
+        }
     }
 
     protected override void change_v_sync(bool v_sync)
@@ -431,38 +480,40 @@ public class OpenGLRenderer : RenderTarget
         secondary_buffer.resize(view_width, view_height);
         render_buffer.resize(view_width, view_height);*/
     }
-}
 
-public class OpenGLModelResourceHandle : IModelResourceHandle, Object
-{
-    public OpenGLModelResourceHandle(uint handle, int triangle_count, uint array_handle)
+    // Private classes
+
+    class OpenGLModelResourceHandle : IModelResourceHandle, Object
     {
-        this.handle = handle;
-        this.triangle_count = triangle_count;
-        this.array_handle = array_handle;
+        public OpenGLModelResourceHandle(InputResourceModel model)
+        {
+            this.model = model;
+        }
+
+        public InputResourceModel? model { get; set; }
+        public uint handle { get; set; }
+        public int triangle_count { get; set; }
+        public uint array_handle { get; set; }
     }
 
-    public uint handle { get; private set; }
-    public int triangle_count { get; private set; }
-    public uint array_handle { get; private set; }
-}
-
-public class OpenGLTextureResourceHandle : ITextureResourceHandle, Object
-{
-    public OpenGLTextureResourceHandle(uint handle)
+    class OpenGLTextureResourceHandle : ITextureResourceHandle, Object
     {
-        this.handle = handle;
+        public OpenGLTextureResourceHandle(InputResourceTexture texture)
+        {
+            this.texture = texture;
+        }
+
+        public InputResourceTexture? texture { get; set; }
+        public uint handle { get; set; }
     }
 
-    public uint handle { get; private set; }
-}
-
-public class OpenGLLabelResourceHandle : ILabelResourceHandle
-{
-    public OpenGLLabelResourceHandle()
+    class OpenGLLabelResourceHandle : RenderTarget.LabelResourceHandle
     {
-        created = false;
-    }
+        public OpenGLLabelResourceHandle()
+        {
+            created = false;
+        }
 
-    public uint handle { get; set; }
+        public uint handle { get; set; }
+    }
 }

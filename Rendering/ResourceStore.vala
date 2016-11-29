@@ -57,8 +57,8 @@ public class ResourceStore : Object
             if (mat == null)
                 mat = new RenderMaterial();
 
-            ResourceModel mod = new ResourceModel(model.points);
-            uint handle = renderer.load_model(mod);
+            InputResourceModel mod = new InputResourceModel(model.points);
+            var handle = renderer.load_model(mod);
 
             RenderModel m = new RenderModel(handle, model.name, model.size);
 
@@ -124,8 +124,8 @@ public class ResourceStore : Object
 
         ImageData img = ImageLoader.load_image(str);
 
-        ResourceTexture tex = new ResourceTexture(img.data, img.size);
-        uint handle = renderer.load_texture(tex);
+        InputResourceTexture tex = new InputResourceTexture(img.data, img.size);
+        var handle = renderer.load_texture(tex);
 
         RenderTexture texture = new RenderTexture(handle, img.size);
         cache_object(dir + filename, CacheObjectType.TEXTURE, texture);
@@ -135,8 +135,7 @@ public class ResourceStore : Object
 
     public RenderLabel2D? create_label()
     {
-        ResourceLabel resource = new ResourceLabel();
-        uint handle = renderer.load_label(resource);
+        var handle = renderer.load_label();
         LabelResourceReference reference = new LabelResourceReference(handle, this);
         RenderLabel2D label = new RenderLabel2D(reference);
 
@@ -145,8 +144,7 @@ public class ResourceStore : Object
 
     public RenderLabel3D? create_label_3D()
     {
-        ResourceLabel resource = new ResourceLabel();
-        uint handle = renderer.load_label(resource);
+        var handle = renderer.load_label();
         LabelResourceReference reference = new LabelResourceReference(handle, this);
         RenderLabel3D label = new RenderLabel3D(reference, load_model("field", "Plane"));
 
@@ -155,7 +153,7 @@ public class ResourceStore : Object
 
     public void delete_label(LabelResourceReference reference)
     {
-        // TODO: Implement label deletion
+        renderer.unload_label(reference.handle);
     }
 
     private void cache_object(string name, CacheObjectType type, Object obj)
@@ -221,9 +219,9 @@ public class ResourceStore : Object
     }
 }
 
-public class ResourceModel
+public class InputResourceModel
 {
-    public ResourceModel(ModelPoint[] points)
+    public InputResourceModel(ModelPoint[] points)
     {
         this.points = points;
     }
@@ -231,9 +229,9 @@ public class ResourceModel
     public ModelPoint[] points { get; private set; }
 }
 
-public class ResourceTexture
+public class InputResourceTexture
 {
-    public ResourceTexture(uchar[] data, Size2i size)
+    public InputResourceTexture(uchar[] data, Size2i size)
     {
         this.data = data;
         this.size = size;
@@ -242,8 +240,6 @@ public class ResourceTexture
     public uchar[] data { get; private set; }
     public Size2i size { get; private set; }
 }
-
-public class ResourceLabel {}
 
 public class LabelResourceReference
 {
@@ -254,7 +250,7 @@ public class LabelResourceReference
         delete_label();
     }
 
-    public LabelResourceReference(uint handle, ResourceStore store)
+    public LabelResourceReference(ILabelResourceHandle handle, ResourceStore store)
     {
         this.handle = handle;
         this.store = store;
@@ -267,38 +263,38 @@ public class LabelResourceReference
 
     public void delete_label()
     {
-        handle = 0;
-        deleted = true;
-
         store.delete_label(this);
+
+        handle = null;
+        deleted = true;
     }
 
-    public uint handle { get; private set; }
+    public ILabelResourceHandle? handle { get; private set; }
     public bool deleted { get; private set; }
 }
 
 public class RenderModel : Object
 {
-    public RenderModel(uint handle, string name, Vec3 size)
+    public RenderModel(IModelResourceHandle handle, string name, Vec3 size)
     {
         this.handle = handle;
         this.name = name;
         this.size = size;
     }
 
-    public uint handle { get; private set; }
+    public IModelResourceHandle handle { get; private set; }
     public string name { get; private set; }
     public Vec3 size { get; private set; }
 }
 
 public class RenderTexture : Object
 {
-    public RenderTexture(uint handle, Size2i size)
+    public RenderTexture(ITextureResourceHandle handle, Size2i size)
     {
         this.handle = handle;
         this.size = size;
     }
 
-    public uint handle { get; private set; }
+    public ITextureResourceHandle handle { get; private set; }
     public Size2i size { get; private set; }
 }

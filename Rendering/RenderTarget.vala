@@ -7,6 +7,7 @@ public abstract class RenderTarget : Object
     private RenderState? current_state = null;
     private RenderState? buffer_state = null;
     private bool running = false;
+    private StepTimer timer;
     private Mutex state_mutex = Mutex();
 
     private bool initialized = false;
@@ -14,11 +15,13 @@ public abstract class RenderTarget : Object
     private Mutex init_mutex = Mutex();
 
     private Mutex resource_mutex = Mutex();
-    private uint handle_model_ID = 1;
-    private uint handle_texture_ID = 1;
-    private uint handle_label_ID = 1;
-    private ArrayList<ResourceModel> to_load_models = new ArrayList<ResourceModel>();
-    private ArrayList<ResourceTexture> to_load_textures = new ArrayList<ResourceTexture>();
+    private ArrayList<IModelResourceHandle> to_load_models = new ArrayList<IModelResourceHandle>();
+    private ArrayList<ITextureResourceHandle> to_load_textures = new ArrayList<ITextureResourceHandle>();
+
+    private ArrayList<IModelResourceHandle> to_unload_models = new ArrayList<IModelResourceHandle>();
+    private ArrayList<ITextureResourceHandle> to_unload_textures = new ArrayList<ITextureResourceHandle>();
+    private ArrayList<ILabelResourceHandle> to_unload_labels = new ArrayList<ILabelResourceHandle>();
+
     private ArrayList<IModelResourceHandle> handles_models = new ArrayList<IModelResourceHandle>();
     private ArrayList<ITextureResourceHandle> handles_textures = new ArrayList<ITextureResourceHandle>();
     private ArrayList<ILabelResourceHandle> handles_labels = new ArrayList<ILabelResourceHandle>();
@@ -55,7 +58,7 @@ public abstract class RenderTarget : Object
     public bool start()
     {
         if (SINGLE_THREADED)
-            return init();
+            return internal_init();
 
         Threading.start0(render_thread);
 
@@ -76,71 +79,71 @@ public abstract class RenderTarget : Object
         return init_status;
     }
 
+    private bool internal_init()
+    {
+        timer = new StepTimer();
+        return init();
+    }
+
     public void stop()
     {
         running = false;
     }
 
-    public uint load_model(ResourceModel obj)
+    public IModelResourceHandle load_model(InputResourceModel model)
     {
         resource_mutex.lock();
-        to_load_models.add(obj);
-        uint ret = handle_model_ID++;
+        IModelResourceHandle ret = init_model(model);
+        to_load_models.add(ret);
         resource_mutex.unlock();
 
         return ret;
     }
 
-    public uint load_texture(ResourceTexture texture)
+    public ITextureResourceHandle load_texture(InputResourceTexture texture)
     {
         resource_mutex.lock();
-        to_load_textures.add(texture);
-        uint ret = handle_texture_ID++;
+        ITextureResourceHandle ret = init_texture(texture);
+        to_load_textures.add(ret);
         resource_mutex.unlock();
 
         return ret;
     }
 
-    public uint load_label(ResourceLabel label)
+    public ILabelResourceHandle load_label()
     {
         resource_mutex.lock();
-        handles_labels.add(create_label(label));
-        uint ret = handle_label_ID++;
+        ILabelResourceHandle ret = init_label();
+        handles_labels.add(ret);
         resource_mutex.unlock();
 
         return ret;
     }
 
-    protected IModelResourceHandle? get_model(uint handle)
+    public void unload_model(IModelResourceHandle model)
     {
         resource_mutex.lock();
-        IModelResourceHandle ret = (handle > handles_models.size || handle <= 0) ? null : handles_models[(int)handle - 1];
+        to_unload_models.add(model);
         resource_mutex.unlock();
-
-        return ret;
     }
 
-    protected ITextureResourceHandle? get_texture(uint handle)
+    public void unload_texture(ITextureResourceHandle texture)
     {
         resource_mutex.lock();
-        ITextureResourceHandle? ret = (handle > handles_textures.size || handle <= 0) ? null : handles_textures[(int)handle - 1];
+        to_unload_textures.add(texture);
         resource_mutex.unlock();
-
-        return ret;
     }
 
-    protected ILabelResourceHandle? get_label(uint handle)
+    public void unload_label(ILabelResourceHandle label)
     {
         resource_mutex.lock();
-        ILabelResourceHandle? ret = (handle > handles_labels.size || handle <= 0) ? null : handles_labels[(int)handle - 1];
+        to_unload_labels.add(label);
         resource_mutex.unlock();
-
-        return ret;
     }
 
     private void render_thread()
     {
-        init_status = init();
+        init_status = internal_init();
         init_mutex.lock();
         initialized = true;
         init_mutex.unlock();
@@ -171,6 +174,10 @@ public abstract class RenderTarget : Object
 
     private void render_cycle(RenderState state)
     {
+        if (timer.elapsed())
+            do_secondly();
+
+        unload_resources();
         load_resources();
         check_settings();
         prepare_state_internal(state);
@@ -178,22 +185,56 @@ public abstract class RenderTarget : Object
         window.swap();
     }
 
+    private void unload_resources()
+    {
+        resource_mutex.lock();
+        while (to_unload_models.size != 0)
+        {
+            IModelResourceHandle model = to_unload_models.remove_at(0);
+            handles_models.remove(model);
+            resource_mutex.unlock();
+            do_unload_model(model);
+            resource_mutex.lock();
+        }
+
+        while (to_unload_textures.size != 0)
+        {
+            ITextureResourceHandle texture = to_unload_textures.remove_at(0);
+            handles_textures.remove(texture);
+            resource_mutex.unlock();
+            do_unload_texture(texture);
+            resource_mutex.lock();
+        }
+
+        while (to_unload_labels.size != 0)
+        {
+            ILabelResourceHandle label = to_unload_labels.remove_at(0);
+            handles_labels.remove(label);
+            resource_mutex.unlock();
+            do_unload_label(label);
+            resource_mutex.lock();
+        }
+        resource_mutex.unlock();
+    }
+
     private void load_resources()
     {
         resource_mutex.lock();
         while (to_load_models.size != 0)
         {
-            ResourceModel model = to_load_models.remove_at(0);
+            IModelResourceHandle model = to_load_models.remove_at(0);
+            handles_models.add(model);
             resource_mutex.unlock();
-            handles_models.add(do_load_model(model));
+            do_load_model(model);
             resource_mutex.lock();
         }
 
         while (to_load_textures.size != 0)
         {
-            ResourceTexture texture = to_load_textures.remove_at(0);
+            ITextureResourceHandle texture = to_load_textures.remove_at(0);
+            handles_textures.add(texture);
             resource_mutex.unlock();
-            handles_textures.add(do_load_texture(texture));
+            do_load_texture(texture);
             resource_mutex.lock();
         }
         resource_mutex.unlock();
@@ -238,7 +279,7 @@ public abstract class RenderTarget : Object
                     if (obj is RenderLabel2D)
                     {
                         RenderLabel2D label = obj as RenderLabel2D;
-                        ILabelResourceHandle handle = get_label(label.reference.handle);
+                        LabelResourceHandle handle = (LabelResourceHandle)label.reference.handle;
 
                         bool invalid = false;
                         if (!handle.created ||
@@ -268,7 +309,7 @@ public abstract class RenderTarget : Object
                     if (obj is RenderLabel3D)
                     {
                         RenderLabel3D label = obj as RenderLabel3D;
-                        ILabelResourceHandle handle = get_label(label.reference.handle);
+                        LabelResourceHandle handle = (LabelResourceHandle)label.reference.handle;
 
                         bool invalid = false;
                         if (!handle.created ||
@@ -310,19 +351,36 @@ public abstract class RenderTarget : Object
     }
 
     public abstract void render(RenderState state);
-
     protected abstract bool init();
-    protected abstract IModelResourceHandle do_load_model(ResourceModel model);
-    protected abstract ITextureResourceHandle do_load_texture(ResourceTexture texture);
+
+    protected abstract void do_load_model(IModelResourceHandle handle);
+    protected abstract void do_load_texture(ITextureResourceHandle handle);
     protected abstract void do_load_label(ILabelResourceHandle handle, LabelBitmap bitmap);
-    protected abstract ILabelResourceHandle create_label(ResourceLabel label);
+
+    protected abstract void do_unload_model(IModelResourceHandle handle);
+    protected abstract void do_unload_texture(ITextureResourceHandle handle);
+    protected abstract void do_unload_label(ILabelResourceHandle handle);
+
+    protected abstract IModelResourceHandle init_model(InputResourceModel model);
+    protected abstract ITextureResourceHandle init_texture(InputResourceTexture texture);
+    protected abstract LabelResourceHandle init_label();
+
     protected abstract void change_v_sync(bool v_sync);
     protected abstract bool change_shader_3D(string name);
     protected abstract bool change_shader_2D(string name);
+    protected virtual void do_secondly() {}
 
     public ResourceStore resource_store { get { return store; } }
     public bool v_sync { get; set; }
     public bool anisotropic_filtering { get; set; }
     public string shader_3D { get; set; }
     public string shader_2D { get; set; }
+
+    protected abstract class LabelResourceHandle : ILabelResourceHandle, Object
+    {
+        public bool created { get; set; }
+        public string font_type { get; set; }
+        public float font_size { get; set; }
+        public string text { get; set; }
+    }
 }

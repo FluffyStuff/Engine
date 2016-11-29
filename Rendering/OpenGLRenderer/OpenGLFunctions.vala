@@ -19,4 +19,13 @@ class OpenGLFunctions
 		GL.glBindVertexArray(array_handle);
 	#endif
 	}
+
+	public static void glDeleteVertexArrays(int amount, uint[] vao)
+	{
+	#if MAC
+		GL.glDeleteVertexArraysAPPLE(amount, vao);
+	#else
+		GL.glDeleteVertexArrays(amount, vao);
+	#endif
+	}
 }
