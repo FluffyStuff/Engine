@@ -391,9 +391,9 @@ class UIntData
 public class DataUInt
 {
     // (int)sizeof(int); Don't do this, so we maintain consistency over network
-    private static const int INT_LENGTH = 4;
-    private static const int FLOAT_LENGTH = 4;
-    private static const int MAX_STRING_LENGTH = 1024 * 1024;
+    private const int INT_LENGTH = 4;
+    private const int FLOAT_LENGTH = 4;
+    private const int MAX_STRING_LENGTH = 1024 * 1024;
 
     private uint8[] data;
     private int index = 0;
@@ -479,10 +479,10 @@ public class DataUInt
 
 public abstract class Serializable : Object
 {
-    private static const uint8 NULL_BYTE = 0xAA;
-    private static const uint8 NON_NULL_BYTE = 0x55;
-    private static const int MAX_PARAMS = 128;
-    private static const int MAX_LIST_LENGTH = 128 * 1024;
+    private const uint8 NULL_BYTE = 0xAA;
+    private const uint8 NON_NULL_BYTE = 0x55;
+    private const int MAX_PARAMS = 128;
+    private const int MAX_LIST_LENGTH = 128 * 1024;
 
     public static Serializable? deserialize_string(string str)
     {

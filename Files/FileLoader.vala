@@ -2,7 +2,7 @@ using Gee;
 
 public class FileLoader
 {
-    private static const int MAX_SIZE = 10 * 1024 * 1024; // 10 MiB
+    private const int MAX_SIZE = 10 * 1024 * 1024; // 10 MiB
 
     private FileLoader() {}
 
