@@ -413,8 +413,8 @@ public class OpenGLRenderer : RenderTarget
     {
         OpenGLModelResourceHandle handle = model as OpenGLModelResourceHandle;
 
-        uint triangles[] = { handle.handle };
-        uint vao[] = { handle.array_handle };
+        uint[] triangles = { handle.handle };
+        uint[] vao = { handle.array_handle };
 
         glDeleteBuffers(1, triangles);
         OpenGLFunctions.glDeleteVertexArrays(1, vao);
@@ -424,7 +424,7 @@ public class OpenGLRenderer : RenderTarget
     {
         OpenGLTextureResourceHandle handle = label_handle as OpenGLTextureResourceHandle;
 
-        uint tex[1] = { handle.handle };
+        uint[] tex = { handle.handle };
         glDeleteTextures(1, tex);
     }
 
@@ -434,7 +434,7 @@ public class OpenGLRenderer : RenderTarget
 
         if (handle.created)
         {
-            uint tex[1] = { handle.handle };
+            uint[] tex = { handle.handle };
             glDeleteTextures(1, tex);
         }
     }
