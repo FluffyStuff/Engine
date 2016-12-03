@@ -2,9 +2,9 @@ public class ImageLoader
 {
     private ImageLoader() {}
 
-    public static ImageData load_image(string name)
+    public static ImageData? load_image(string name)
     {
-        return SoilWrap.load_image(name);
+        return ImageLoadWrap.load_image(name);
     }
 }
 

@@ -1,17 +1,20 @@
-// libSOIL is not thread safe, so let's use this thread safe wrapper
-public class SoilWrap : Object
+// stb is not thread safe, so let's use this thread safe wrapper
+public class ImageLoadWrap : Object
 {
     private static Mutex mutex = Mutex();
 
-    private SoilWrap() {}
+    private ImageLoadWrap() {}
 
-    public static ImageData load_image(string name)
+    public static ImageData? load_image(string name)
     {
         int width, height;
 
         mutex.lock();
-        uchar *image = SOIL.load_image(name, out width, out height, null, SOIL.LoadFlags.RGBA);
+        uchar* image = stb.load(name, out width, out height);
         mutex.unlock();
+		
+		if (image == null)
+			return null;
 
         uchar[] data = new uchar[width * height * 4];
         Memory.copy(data, image, sizeof(uchar) * data.length);
