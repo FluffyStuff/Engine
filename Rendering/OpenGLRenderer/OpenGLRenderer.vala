@@ -24,17 +24,23 @@ public class OpenGLRenderer : RenderTarget
 
     private Size2i view_size;
 
-    public OpenGLRenderer(IWindowTarget window)
+    public OpenGLRenderer(IWindowTarget window, bool multithread_rendering)
     {
-        base(window);
+        base(window, multithread_rendering);
         store = new ResourceStore(this);
     }
 
-    protected override bool init()
+    protected override bool renderer_init()
     {
-        if (glCreateShader == null)
+        if (glEnable == null)
         {
             EngineLog.log(EngineLogType.RENDERING, "OpenGLRenderer", "Invalid GL context");
+            return false;
+        }
+
+        if (glCreateShader == null)
+        {
+            EngineLog.log(EngineLogType.RENDERING, "OpenGLRenderer", "Invalid GL 2.1 context");
             return false;
         }
 

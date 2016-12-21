@@ -3,17 +3,15 @@ using SDL;
 public class SDLWindowTarget : Object, IWindowTarget
 {
     private bool is_fullscreen;
-    private Window window;
-    private GLContext context;
+    private unowned Window window;
 
     private Cursor normal_cursor;
     private Cursor hover_cursor;
     private Cursor caret_cursor;
 
-    public SDLWindowTarget(owned Window window, owned GLContext context, bool is_fullscreen)
+    public SDLWindowTarget(Window window, bool is_fullscreen)
     {
-        this.window = (owned)window;
-        this.context = (owned)context;
+        this.window = window;
         this.is_fullscreen = is_fullscreen;
 
         normal_cursor = new Cursor.from_system(SystemCursor.ARROW);

@@ -2,17 +2,13 @@ using Gee;
 
 public abstract class RenderTarget : Object
 {
-    private const bool SINGLE_THREADED = true;
+    private bool multithread_rendering;
 
     private RenderState? current_state = null;
     private RenderState? buffer_state = null;
     private bool running = false;
     private StepTimer timer;
     private Mutex state_mutex = Mutex();
-
-    private bool initialized = false;
-    private bool init_status;
-    private Mutex init_mutex = Mutex();
 
     private Mutex resource_mutex = Mutex();
     private ArrayList<IModelResourceHandle> to_load_models = new ArrayList<IModelResourceHandle>();
@@ -33,9 +29,10 @@ public abstract class RenderTarget : Object
     protected IWindowTarget window;
     protected ResourceStore store;
 
-    public RenderTarget(IWindowTarget window)
+    public RenderTarget(IWindowTarget window, bool multithread_rendering)
     {
         this.window = window;
+        this.multithread_rendering = multithread_rendering;
         anisotropic_filtering = true;
         v_sync = saved_v_sync;
     }
@@ -51,38 +48,41 @@ public abstract class RenderTarget : Object
         buffer_state = state;
         state_mutex.unlock();
 
-        if (SINGLE_THREADED)
+        if (!multithread_rendering)
             render_cycle(buffer_state);
     }
 
-    public bool start()
+    public bool init()
     {
-        if (SINGLE_THREADED)
-            return internal_init();
+        return internal_init();
+    }
 
-        Threading.start0(render_thread);
-
-        while (true)
+    public void cycle()
+    {
+        running = true;
+        while (running)
         {
-            init_mutex.lock();
-            if (initialized)
+            state_mutex.lock();
+            if (current_state == buffer_state)
             {
-                init_mutex.unlock();
-                break;
+                state_mutex.unlock();
+                Thread.usleep(1000);
+                continue;
             }
-            init_mutex.unlock();
 
-            window.pump_events();
-            Thread.usleep(10000);
+            current_state = buffer_state;
+            state_mutex.unlock();
+
+            render_cycle(current_state);
+
+            // TODO: Fix fullscreen v-sync issues
         }
-
-        return init_status;
     }
 
     private bool internal_init()
     {
         timer = new StepTimer();
-        return init();
+        return renderer_init();
     }
 
     public void stop()
@@ -139,37 +139,6 @@ public abstract class RenderTarget : Object
         resource_mutex.lock();
         to_unload_labels.add(label);
         resource_mutex.unlock();
-    }
-
-    private void render_thread()
-    {
-        init_status = internal_init();
-        init_mutex.lock();
-        initialized = true;
-        init_mutex.unlock();
-
-        if (!init_status)
-            return;
-
-        running = true;
-
-        while (running)
-        {
-            state_mutex.lock();
-            if (current_state == buffer_state)
-            {
-                state_mutex.unlock();
-                Thread.usleep(1000);
-                continue;
-            }
-
-            current_state = buffer_state;
-            state_mutex.unlock();
-
-            render_cycle(current_state);
-
-            // TODO: Fix fullscreen v-sync issues
-        }
     }
 
     private void render_cycle(RenderState state)
@@ -351,7 +320,7 @@ public abstract class RenderTarget : Object
     }
 
     public abstract void render(RenderState state);
-    protected abstract bool init();
+    protected abstract bool renderer_init();
 
     protected abstract void do_load_model(IModelResourceHandle handle);
     protected abstract void do_load_texture(ITextureResourceHandle handle);
