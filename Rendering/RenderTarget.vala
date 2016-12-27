@@ -9,6 +9,7 @@ public abstract class RenderTarget : Object
     private bool running = false;
     private StepTimer timer;
     private Mutex state_mutex = Mutex();
+    private Mutex prop_mutex = Mutex();
 
     private Mutex resource_mutex = Mutex();
     private ArrayList<IModelResourceHandle> to_load_models = new ArrayList<IModelResourceHandle>();
@@ -25,6 +26,9 @@ public abstract class RenderTarget : Object
     private bool saved_v_sync = false;
     private string saved_shader_3D;
     private string saved_shader_2D;
+
+    private string _shader_3D;
+    private string _shader_2D;
 
     protected IWindowTarget window;
     protected ResourceStore store;
@@ -342,8 +346,42 @@ public abstract class RenderTarget : Object
     public ResourceStore resource_store { get { return store; } }
     public bool v_sync { get; set; }
     public bool anisotropic_filtering { get; set; }
-    public string shader_3D { get; set; }
-    public string shader_2D { get; set; }
+
+    public string shader_3D
+    {
+        owned get
+        {
+            prop_mutex.lock();
+            string s = _shader_3D;
+            prop_mutex.unlock();
+            return s;
+        }
+
+        set
+        {
+            prop_mutex.lock();
+            _shader_3D = value;
+            prop_mutex.unlock();
+        }
+    }
+
+    public string shader_2D
+    {
+        owned get
+        {
+            prop_mutex.lock();
+            string s = _shader_2D;
+            prop_mutex.unlock();
+            return s;
+        }
+
+        set
+        {
+            prop_mutex.lock();
+            _shader_2D = value;
+            prop_mutex.unlock();
+        }
+    }
 
     protected abstract class LabelResourceHandle : ILabelResourceHandle, Object
     {
