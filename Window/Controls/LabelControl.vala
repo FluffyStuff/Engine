@@ -29,6 +29,12 @@ public class LabelControl : EndControl
         }
     }
 
+    public float alpha
+    {
+        get { return color.a; }
+        set { color = Color(color.r, color.g, color.b, value); }
+    }
+
     public string font_type
     {
         get { return label.font_type; }
