@@ -59,6 +59,7 @@ public class Sound
 
     ~Sound()
     {
+        stop();
         sound = null;
         buffer = null;
     }
@@ -72,10 +73,16 @@ public class Sound
         sound.set_buffer(buffer);
     }
 
-    public void play()
+    public void play(bool loop = false)
     {
+        sound.set_loop(loop);
         if (!muted)
             sound.play();
+    }
+
+    public void stop()
+    {
+        sound.stop();
     }
 
     public string name { get; private set; }
