@@ -1,3 +1,5 @@
+using Gee;
+
 public abstract class Container : Object
 {
     private bool _loaded = false;
@@ -12,7 +14,8 @@ public abstract class Container : Object
     private Rectangle _scissor_box;
     private bool _visible = true;
 
-    protected Gee.ArrayList<Container> children = new Gee.ArrayList<Container>();
+    private ArrayList<Animation> animations = new ArrayList<Animation>();
+    protected ArrayList<Container> children = new Gee.ArrayList<Container>();
     protected weak RenderWindow? parent_window;
     private weak Container? parent;
 
@@ -53,10 +56,23 @@ public abstract class Container : Object
             parent_window = parent.parent_window;
     }
 
+    public void add_animation(Animation animation)
+    {
+        animations.add(animation);
+        animation.post_finished.connect(animation_finished);
+    }
+
+    private void animation_finished(Animation animation)
+    {
+        animations.remove(animation);
+    }
+
     public void process(DeltaArgs delta)
     {
         for (int i = children.size - 1; i >= 0 && i < children.size; i--)
             children[i].process(delta);
+        foreach (var animation in animations)
+            animation.process(delta);
         do_process(delta);
     }
 
