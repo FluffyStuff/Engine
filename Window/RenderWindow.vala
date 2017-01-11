@@ -27,7 +27,6 @@ public abstract class RenderWindow
         {
             process(get_delta());
             renderer.set_state(render());
-            window.pump_events();
             GLib.Thread.usleep(1000);
         }
     }

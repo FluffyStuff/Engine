@@ -67,6 +67,8 @@ public abstract class RenderTarget : Object
         while (running)
         {
             state_mutex.lock();
+            window.pump_events();
+            
             if (current_state == buffer_state)
             {
                 state_mutex.unlock();

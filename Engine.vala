@@ -149,7 +149,10 @@ public class SDLGLEngine : Engine
     {
         stop_mutex.lock();
         renderer.stop();
-        stop_mutex.lock();
+
+        if (multithread_rendering)
+            stop_mutex.lock();
+            
         stop_mutex.unlock();
     }
 
