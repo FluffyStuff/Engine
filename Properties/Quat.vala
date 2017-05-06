@@ -7,6 +7,16 @@ public class Quat
 
     public Quat.from_euler(float roll, float pitch, float yaw)
     {
+		init(roll, pitch, yaw);
+    }
+
+    public Quat.from_euler_vec(Vec3 vec)
+    {
+        init(vec.x, vec.y, vec.z);
+    }
+	
+	private void init(float roll, float pitch, float yaw)
+	{
         // Multiply with pi to simplify use
         float pi = (float)Math.PI;
         roll  *= pi;
@@ -26,12 +36,7 @@ public class Quat
         x = sr * cpcy - cr * spsy;
         y = cr * sp * cy + sr * cp * sy;
         z = cr * cp * sy - sr * sp * cy;
-    }
-
-    public Quat.from_euler_vec(Vec3 vec)
-    {
-        from_euler(vec.x, vec.y, vec.z);
-    }
+	}
 
     public Quat.vals(float w, float x, float y, float z)
     {

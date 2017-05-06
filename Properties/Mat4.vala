@@ -7,13 +7,10 @@ public class Mat4
 
     public Mat4()
     {
-        with_vecs
-        (
-            Vec4(1, 0, 0, 0),
-            Vec4(0, 1, 0, 0),
-            Vec4(0, 0, 1, 0),
-            Vec4(0, 0, 0, 1)
-        );
+        v1 = Vec4(1, 0, 0, 0);
+		v2 = Vec4(0, 1, 0, 0);
+        v3 = Vec4(0, 0, 1, 0);
+        v4 = Vec4(0, 0, 0, 1);
     }
 
     public Mat4.with_array(float *a)
