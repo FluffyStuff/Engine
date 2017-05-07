@@ -65,7 +65,7 @@ class OpenGLShaderProgram2D
         OpenGLFunctions.glBindVertexArray(array_handle);
         glEnableVertexAttribArray(vert_position_attribute);
         glBindBuffer(GL_ARRAY_BUFFER, vertice_handle);
-        glVertexAttribPointer(vert_position_attribute, 2, GL_FLOAT, false, 0, (GLvoid[])0);
+        glVertexAttribPointer(vert_position_attribute, 2, GL_FLOAT, false, 0, 0);
 
         model_transform_attrib = glGetUniformLocation(program, "model_transform");
         use_texture_attrib = glGetUniformLocation(program, "use_texture");

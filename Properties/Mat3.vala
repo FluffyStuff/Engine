@@ -6,12 +6,9 @@ public class Mat3
 
     public Mat3()
     {
-        with_vecs
-        (
-            { 1, 0, 0 },
-            { 0, 1, 0 },
-            { 0, 0, 1 }
-        );
+        v1 = { 1, 0, 0 };
+        v2 = { 0, 1, 0 };
+        v3 = { 0, 0, 1 };
     }
 
     public Mat3.with_array(float *a)

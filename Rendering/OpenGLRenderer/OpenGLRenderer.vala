@@ -344,11 +344,11 @@ public class OpenGLRenderer : RenderTarget
         OpenGLFunctions.glBindVertexArray(vao[0]);
 
         glEnableVertexAttribArray(POSITION_ATTRIBUTE);
-        glVertexAttribPointer(POSITION_ATTRIBUTE, 4, GL_FLOAT, false, len, (GLvoid[])0);
+        glVertexAttribPointer(POSITION_ATTRIBUTE, 4, GL_FLOAT, false, len, 0);
         glEnableVertexAttribArray(TEXTURE_ATTRIBUTE);
-        glVertexAttribPointer(TEXTURE_ATTRIBUTE, 3, GL_FLOAT, false, len, (GLvoid[])(4 * sizeof(float)));
+        glVertexAttribPointer(TEXTURE_ATTRIBUTE, 3, GL_FLOAT, false, len, 4 * (int)sizeof(float));
         glEnableVertexAttribArray(NORMAL_ATTRIBUTE);
-        glVertexAttribPointer(NORMAL_ATTRIBUTE, 3, GL_FLOAT, false, len, (GLvoid[])(7 * sizeof(float)));
+        glVertexAttribPointer(NORMAL_ATTRIBUTE, 3, GL_FLOAT, false, len, 7 * (int)sizeof(float));
 
         handle.handle = triangles[0];
         handle.triangle_count = resource.points.length;
