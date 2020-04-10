@@ -1,21 +1,24 @@
-public class ImageLoader
+namespace Engine
 {
-    private ImageLoader() {}
-
-    public static ImageData? load_image(string name)
+    public class ImageLoader
     {
-        return ImageLoadWrap.load_image(name);
-    }
-}
+        private ImageLoader() {}
 
-public class ImageData
-{
-    public ImageData(uchar[] data, Size2i size)
-    {
-        this.data = data;
-        this.size = size;
+        public static ImageData? load_image(string name)
+        {
+            return ImageLoadWrap.load_image(name);
+        }
     }
 
-    public uchar[] data { get; private set; }
-    public Size2i size { get; private set; }
+    public class ImageData
+    {
+        public ImageData(uchar[] data, Size2i size)
+        {
+            this.data = data;
+            this.size = size;
+        }
+
+        public uchar[] data { get; private set; }
+        public Size2i size { get; private set; }
+    }
 }

@@ -1,167 +1,175 @@
 using SDL;
 using GL;
 
-public abstract class Engine : Object
+namespace Engine
 {
-    public Engine(bool multithread_rendering)
+    public abstract class Engine : Object
     {
-        this.multithread_rendering = multithread_rendering;
+        Engine(bool multithread_rendering, bool debug)
+        {
+            this.multithread_rendering = multithread_rendering;
+            this.debug = debug;
+        }
+
+        public abstract bool init(string window_name, int window_width, int window_height, int multisampling, bool fullscreen);
+        public abstract void stop();
+
+        // For global deinitialization
+        public abstract void quit();
+
+        public bool multithread_rendering { get; private set; }
+        public bool debug { get; private set; }
+        public IWindowTarget window { get; protected set; }
+        public RenderTarget renderer { get; protected set; }
     }
 
-    public abstract bool init(string window_name, int window_width, int window_height, int multisampling, bool fullscreen);
-    public abstract void stop();
-
-    // For global deinitialization
-    public abstract void quit();
-
-    public bool multithread_rendering { get; private set; }
-    public IWindowTarget window { get; protected set; }
-    public RenderTarget renderer { get; protected set; }
-}
-
-public class SDLGLEngine : Engine
-{
-    private static bool initialized = false;
-
-    private Window gl_window;
-    private GLContext context;
-
-    private GLib.Mutex init_mutex = GLib.Mutex();
-    private GLib.Mutex stop_mutex = GLib.Mutex();
-    private bool init_status;
-    private string _window_name;
-    private int _window_width;
-    private int _window_height;
-    private int _multisamples;
-    private bool _fullscreen;
-
-    public SDLGLEngine(bool multithread_rendering)
+    public class SDLGLEngine : Engine
     {
-        base(multithread_rendering);
-    }
+        private static bool initialized = false;
 
-    private bool global_init()
-    {
-        if (initialized)
+        private Window gl_window;
+        private GLContext context;
+
+        private GLib.Mutex init_mutex = GLib.Mutex();
+        private GLib.Mutex stop_mutex = GLib.Mutex();
+        private bool init_status;
+        private string _window_name;
+        private int _window_width;
+        private int _window_height;
+        private int _multisamples;
+        private bool _fullscreen;
+
+        public SDLGLEngine(bool multithread_rendering, bool debug)
+        {
+            base(multithread_rendering, debug);
+        }
+
+        private bool global_init()
+        {
+            if (initialized)
+                return true;
+            initialized = true;
+
+            if (SDL.init(SDL.InitFlag.EVERYTHING) < 0)
+            {
+                EngineLog.log(EngineLogType.ENGINE, "SDLGLEngine", "Could not init SDL");
+                initialized = false;
+                return false;
+            }
+
             return true;
-        initialized = true;
-
-        if (SDL.init(SDL.InitFlag.EVERYTHING) < 0)
-        {
-            EngineLog.log(EngineLogType.ENGINE, "SDLGLEngine", "Could not init SDL");
-            initialized = false;
-            return false;
         }
 
-        return true;
-    }
-
-    public override bool init(string window_name, int window_width, int window_height, int multisamples, bool fullscreen)
-    {
-        if (!global_init())
-            return false;
-
-        if (!multithread_rendering)
-            return internal_init(window_name, window_width, window_height, multisamples, fullscreen);
-
-        _window_name = window_name;
-        _window_width = window_width;
-        _window_height = window_height;
-        _multisamples = multisamples;
-        _fullscreen = fullscreen;
-
-        ref();
-        init_mutex.lock();
-        Threading.start0(init_thread);
-        init_mutex.lock();
-        init_mutex.unlock();
-
-        return init_status;
-    }
-
-    private void init_thread()
-    {
-        init_status = internal_init(_window_name, _window_width, _window_height, _multisamples, _fullscreen);
-        init_mutex.unlock();
-
-        if (init_status)
-            renderer.cycle();
-        stop_mutex.unlock();
-        unref();
-    }
-
-    private bool internal_init(string window_name, int window_width, int window_height, int multisamples, bool fullscreen)
-    {
-        gl_window = create_window(window_name, window_width, window_height, fullscreen, multisamples);
-        if (gl_window == null)
+        public override bool init(string window_name, int window_width, int window_height, int multisamples, bool fullscreen)
         {
-            Environment.log(LogType.ERROR, "SDLGLEngine", "Could not create window");
-            return false;
+            if (!global_init())
+                return false;
+
+            if (!multithread_rendering)
+                return internal_init(window_name, window_width, window_height, multisamples, fullscreen);
+
+            _window_name = window_name;
+            _window_width = window_width;
+            _window_height = window_height;
+            _multisamples = multisamples;
+            _fullscreen = fullscreen;
+
+            ref();
+            init_mutex.lock();
+            Threading.start0(init_thread);
+            init_mutex.lock();
+            init_mutex.unlock();
+
+            return init_status;
         }
 
-        context = create_context(gl_window);
-        if (context == null)
+        private void init_thread()
         {
-            Environment.log(LogType.ERROR, "SDLGLEngine", "Could not create graphics context");
-            return false;
+            init_status = internal_init(_window_name, _window_width, _window_height, _multisamples, _fullscreen);
+            init_mutex.unlock();
+
+            if (init_status)
+                renderer.cycle();
+            stop_mutex.unlock();
+            unref();
         }
 
-        GLEW.experimental = true;
-
-        if (GLEW.init())
+        private bool internal_init(string window_name, int window_width, int window_height, int multisamples, bool fullscreen)
         {
-            EngineLog.log(EngineLogType.ENGINE, "SDLGLEngine", "Could not init GLEW");
-            return false;
+            gl_window = create_window(window_name, window_width, window_height, fullscreen, multisamples);
+            if (gl_window == null)
+            {
+                EngineLog.log(EngineLogType.ENGINE, "SDLGLEngine", "Could not create window");
+                return false;
+            }
+
+            context = create_context(gl_window);
+            if (context == null)
+            {
+                EngineLog.log(EngineLogType.ENGINE, "SDLGLEngine", "Could not create graphics context");
+                return false;
+            }
+
+            GLEW.experimental = true;
+
+            if (GLEW.init())
+            {
+                EngineLog.log(EngineLogType.ENGINE, "SDLGLEngine", "Could not init GLEW");
+                return false;
+            }
+
+            window = new SDLWindowTarget(gl_window, fullscreen);
+            renderer = new OpenGLRenderer(window, multithread_rendering, debug);
+
+            return renderer.init();
         }
 
-        window = new SDLWindowTarget(gl_window, fullscreen);
-        renderer = new OpenGLRenderer(window, multithread_rendering);
+        private Window? create_window(string name, int width, int height, bool fullscreen, int multisamples)
+        {
+            int s = (int)Math.pow(2, multisamples);
+            SDL.GL.set_attribute(GLattr.MULTISAMPLEBUFFERS, 1);
+            SDL.GL.set_attribute(GLattr.MULTISAMPLESAMPLES, s);
+            SDL.GL.set_attribute(GLattr.CONTEXT_MAJOR_VERSION, 2);
+            SDL.GL.set_attribute(GLattr.CONTEXT_MINOR_VERSION, 1);
+            SDL.GL.set_attribute(GLattr.CONTEXT_PROFILE_MASK, 1); // Core Profile
 
-        return renderer.init();
-    }
+            if (debug)
+                SDL.GL.set_attribute(GLattr.CONTEXT_FLAGS, GLcontext.DEBUG_FLAG);
 
-    private Window? create_window(string name, int width, int height, bool fullscreen, int multisamples)
-    {
-        int s = (int)Math.pow(2, multisamples);
-        SDL.GL.set_attribute(GLattr.MULTISAMPLEBUFFERS, 1);
-        SDL.GL.set_attribute(GLattr.MULTISAMPLESAMPLES, s);
-        SDL.GL.set_attribute(GLattr.CONTEXT_MAJOR_VERSION, 2);
-        SDL.GL.set_attribute(GLattr.CONTEXT_MINOR_VERSION, 1);
-        SDL.GL.set_attribute(GLattr.CONTEXT_PROFILE_MASK, 1); // Core Profile
+            var flags = WindowFlags.OPENGL | WindowFlags.RESIZABLE;
+            if (fullscreen)
+                flags |= WindowFlags.FULLSCREEN;
 
-        var flags = WindowFlags.OPENGL | WindowFlags.RESIZABLE;
-        if (fullscreen)
-            flags |= WindowFlags.FULLSCREEN;
+            return new Window(name, Window.POS_CENTERED, Window.POS_CENTERED, width, height, flags);
+        }
 
-        return new Window(name, Window.POS_CENTERED, Window.POS_CENTERED, width, height, flags);
-    }
+        private GLContext? create_context(Window window)
+        {
+            GLContext? context = SDL.GL.create_context(window);
+            if (context == null)
+                return null;
 
-    private GLContext? create_context(Window window)
-    {
-        GLContext? context = SDL.GL.create_context(window);
-        if (context == null)
-            return null;
+            return context;
+        }
 
-        return context;
-    }
-
-    public override void stop()
-    {
-        stop_mutex.lock();
-        renderer.stop();
-
-        if (multithread_rendering)
+        public override void stop()
+        {
             stop_mutex.lock();
-            
-        stop_mutex.unlock();
-    }
+            renderer.stop();
 
-    public override void quit()
-    {
-        if (initialized)
+            if (multithread_rendering)
+                stop_mutex.lock();
+                
+            stop_mutex.unlock();
+        }
+
+        public override void quit()
         {
-            SDL.quit();
-            initialized = false;
+            if (initialized)
+            {
+                SDL.quit();
+                initialized = false;
+            }
         }
     }
 }

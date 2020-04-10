@@ -1,35 +1,38 @@
-class ImageControl : EndControl
+namespace Engine
 {
-    private RenderImage2D image;
-    private string name;
-
-    public ImageControl(string name)
+    public class ImageControl : EndControl
     {
-        this.name = name;
-    }
+        private RenderImage2D image;
+        private string name;
 
-    public override void on_added()
-    {
-        RenderTexture texture = store.load_texture(name);
-        image = new RenderImage2D(texture);
-    }
+        public ImageControl(string name)
+        {
+            this.name = name;
+        }
 
-    protected override RenderObject2D get_obj()
-    {
-        return image;
-    }
+        public override void pre_added()
+        {
+            RenderTexture texture = store.load_texture(name);
+            image = new RenderImage2D(texture);
+        }
 
-    public Color diffuse_color
-    {
-        get { return image.diffuse_color; }
-        set { image.diffuse_color = value; }
-    }
+        protected override RenderObject2D get_obj()
+        {
+            return image;
+        }
 
-    public float rotation
-    {
-        get { return image.rotation; }
-        set { image.rotation = value; }
-    }
+        public Color diffuse_color
+        {
+            get { return image.diffuse_color; }
+            set { image.diffuse_color = value; }
+        }
 
-    public override Size2 end_size { get { return Size2(image.texture.size.width, image.texture.size.height); } }
+        public float rotation
+        {
+            get { return image.rotation; }
+            set { image.rotation = value; }
+        }
+
+        public override Size2 end_size { get { return Size2(image.texture.size.width, image.texture.size.height); } }
+    }
 }

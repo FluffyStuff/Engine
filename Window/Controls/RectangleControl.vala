@@ -1,27 +1,30 @@
-public class RectangleControl : EndControl
+namespace Engine
 {
-    private RenderRectangle2D rectangle;
-
-    public RectangleControl()
+    public class RectangleControl : EndControl
     {
-        rectangle = new RenderRectangle2D();
-    }
+        private RenderRectangle2D rectangle;
 
-    protected override RenderObject2D get_obj()
-    {
-        return rectangle;
-    }
+        public RectangleControl()
+        {
+            rectangle = new RenderRectangle2D();
+        }
 
-    public Color color
-    {
-        get { return rectangle.diffuse_color; }
-        set { rectangle.diffuse_color = value; }
-    }
+        protected override RenderObject2D get_obj()
+        {
+            return rectangle;
+        }
 
-    public override Size2 end_size { get { return Size2(100, 100); } }
-    public float rotation
-    {
-        get { return rectangle.rotation; }
-        set { rectangle.rotation = value; }
+        public Color color
+        {
+            get { return rectangle.diffuse_color; }
+            set { rectangle.diffuse_color = value; }
+        }
+
+        public override Size2 end_size { get { return Size2(100, 100); } }
+        public float rotation
+        {
+            get { return rectangle.rotation; }
+            set { rectangle.rotation = value; }
+        }
     }
 }

@@ -1,23 +1,80 @@
-public class Camera
+namespace Engine
 {
-    public Camera()
+    public class Camera
     {
-        focal_length = 1;
+        private bool dirty_rotation = true;
+        private float _roll;
+        private float _pitch;
+        private float _yaw;
+        private Vec3 _position;
+        private Transform view_transform;
+
+        public Camera()
+        {
+            view_angle = 90;
+            view_transform = new CameraTransform();
+        }
+
+        public Transform get_view_transform()
+        {
+            if (dirty_rotation)
+            {
+                view_transform.rotation = Quat.from_euler(yaw, pitch, 0).mul(Quat.from_euler(0, 0, roll)); // Apply roll last
+                dirty_rotation = false;
+            }
+
+            return new Transform.with_mat(view_transform.copy_full_parentless().matrix.inverse());
+        }
+
+        public float roll
+        {
+            get { return _roll; }
+            set
+            {
+                if (_roll != value)
+                {
+                    _roll = value;
+                    dirty_rotation = true;
+                }
+            }
+        }
+
+        public float pitch
+        {
+            get { return _pitch; }
+            set
+            {
+                if (_pitch != value)
+                {
+                    _pitch = value;
+                    dirty_rotation = true;
+                }
+            }
+        }
+
+        public float yaw
+        {
+            get { return _yaw; }
+            set
+            {
+                if (_yaw != value)
+                {
+                    _yaw = value;
+                    dirty_rotation = true;
+                }
+            }
+        }
+
+        public Vec3 position
+        {
+            get { return _position; }
+            set
+            {
+                _position = value;
+                view_transform.position = value;
+            }
+        }
+
+        public float view_angle { get; set; }
     }
-
-    public Mat4 get_view_transform()
-    {
-        Quat rot = new Quat.from_euler(pitch, yaw, 0).mul(new Quat.from_euler(0, 0, roll)); // Apply roll last
-        Mat4 r = Calculations.rotation_matrix_quat(rot);
-        Mat4 p = Calculations.translation_matrix(position.negate());
-
-        return p.mul_mat(r);
-    }
-
-    public float roll { get; set; }
-    public float pitch { get; set; }
-    public float yaw { get; set; }
-
-    public Vec3 position { get; set; }
-    public float focal_length { get; set; }
 }

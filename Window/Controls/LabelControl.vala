@@ -1,72 +1,75 @@
-public class LabelControl : EndControl
+namespace Engine
 {
-    private RenderLabel2D label;
-
-    public override void on_added()
+    public class LabelControl : EndControl
     {
-        label = store.create_label();
-        label.text = "";
-        label.font_size = 30;
-        label.font_type = "Noto Sans CJK JP";
-        color = Color.white();
-    }
+        private RenderLabel2D label;
 
-    protected override RenderObject2D get_obj()
-    {
-        return label;
-    }
-
-    public Color color
-    {
-        get
+        public override void pre_added()
         {
-            Color d = label.diffuse_color;
-            return Color(d.r + 1, d.g + 1, d.b + 1, d.a);
+            label = store.create_label();
+            label.text = "";
+            label.font_size = 30;
+            label.font_type = "Noto Sans CJK JP";
+            color = Color.white();
         }
-        set
+
+        protected override RenderObject2D get_obj()
         {
-            label.diffuse_color = Color(value.r - 1, value.g - 1, value.b - 1, value.a);
+            return label;
         }
-    }
 
-    public float alpha
-    {
-        get { return color.a; }
-        set { color = Color(color.r, color.g, color.b, value); }
-    }
-
-    public string font_type
-    {
-        get { return label.font_type; }
-        set
+        public Color color
         {
-            label.font_type = value;
-            size = end_size;
-            //resize();
+            get
+            {
+                Color d = label.diffuse_color;
+                return Color(d.r + 1, d.g + 1, d.b + 1, d.a);
+            }
+            set
+            {
+                label.diffuse_color = Color(value.r - 1, value.g - 1, value.b - 1, value.a);
+            }
         }
-    }
 
-    public float font_size
-    {
-        get { return label.font_size; } // Pixels
-        set
+        public float alpha
         {
-            label.font_size = value; // Pixels
-            size = end_size;
-            //resize();
+            get { return color.a; }
+            set { color = Color(color.r, color.g, color.b, value); }
         }
-    }
 
-    public string text
-    {
-        get { return label.text; }
-        set
+        public string font_type
         {
-            label.text = value;
-            size = end_size;
-            //resize();
+            get { return label.font_type; }
+            set
+            {
+                label.font_type = value;
+                size = end_size;
+                //resize();
+            }
         }
-    }
 
-    public override Size2 end_size { get { return label.info.size.to_size2(); } }
+        public float font_size
+        {
+            get { return label.font_size; } // Pixels
+            set
+            {
+                label.font_size = value; // Pixels
+                size = end_size;
+                //resize();
+            }
+        }
+
+        public string text
+        {
+            get { return label.text; }
+            set
+            {
+                label.text = value;
+                size = end_size;
+                //resize();
+            }
+        }
+
+        public override Size2 end_size { get { return label.info.size.to_size2(); } }
+    }
 }

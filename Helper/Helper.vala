@@ -1,9 +1,12 @@
-public class Helper
+namespace Engine
 {
-    private Helper() {}
-
-    public static string sanitize_string(string input)
+    public class Helper
     {
-        return input.replace("\r", "").replace("\n", "").replace("\t", "").replace("\0", "");
+        private Helper() {}
+
+        public static string sanitize_string(string input)
+        {
+            return input.replace("\r", "").replace("\n", "").replace("\t", "").replace("\0", "");
+        }
     }
 }

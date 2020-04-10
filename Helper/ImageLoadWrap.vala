@@ -1,25 +1,28 @@
-// stb is not thread safe, so let's use this thread safe wrapper
-public class ImageLoadWrap : Object
+namespace Engine
 {
-    private static Mutex mutex = Mutex();
-
-    private ImageLoadWrap() {}
-
-    public static ImageData? load_image(string name)
+    // stb is not thread safe, so let's use this thread safe wrapper
+    public class ImageLoadWrap : Object
     {
-        int width, height;
+        private static Mutex mutex = Mutex();
 
-        mutex.lock();
-        uchar* image = stb.load(name, out width, out height);
-        mutex.unlock();
-		
-		if (image == null)
-			return null;
+        private ImageLoadWrap() {}
 
-        uchar[] data = new uchar[width * height * 4];
-        Memory.copy(data, image, sizeof(uchar) * data.length);
-        delete image;
+        public static ImageData? load_image(string name)
+        {
+            int width, height;
 
-        return new ImageData(data, Size2i(width, height));
+            mutex.lock();
+            uchar* image = stb.load(name, out width, out height);
+            mutex.unlock();
+            
+            if (image == null)
+                return null;
+
+            uchar[] data = new uchar[width * height * 4];
+            Memory.copy(data, image, sizeof(uchar) * data.length);
+            delete image;
+
+            return new ImageData(data, Size2i(width, height));
+        }
     }
 }

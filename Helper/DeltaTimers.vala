@@ -1,63 +1,66 @@
-public class DeltaTimer
+namespace Engine
 {
-    private float start_time;
-    private bool started;
-
-    public float elapsed(DeltaArgs args)
+    public class DeltaTimer
     {
-        if (!started)
+        private float start_time;
+        private bool started;
+
+        public float elapsed(DeltaArgs args)
         {
-            started = true;
-            start_time = args.time;
+            if (!started)
+            {
+                started = true;
+                start_time = args.time;
+            }
+
+            return args.time - start_time;
         }
 
-        return args.time - start_time;
-    }
-
-    public void reset()
-    {
-        started = false;
-    }
-}
-
-public class EventTimer
-{
-    private bool active;
-    private bool started;
-    private float start_time;
-
-    public signal void elapsed(EventTimer timer);
-
-    public EventTimer(float delay, bool active = false)
-    {
-        this.delay = delay;
-        this.active = active;
-    }
-
-    public void process(DeltaArgs args)
-    {
-        if (!active)
-            return;
-
-        if (!started)
+        public void reset()
         {
-            start_time = args.time;
-            started = true;
+            started = false;
+        }
+    }
+
+    public class EventTimer
+    {
+        private bool active;
+        private bool started;
+        private float start_time;
+
+        public signal void elapsed(EventTimer timer);
+
+        public EventTimer(float delay, bool active = false)
+        {
+            this.delay = delay;
+            this.active = active;
         }
 
-        if (args.time - start_time < delay)
-            return;
+        public void process(DeltaArgs args)
+        {
+            if (!active)
+                return;
 
-        active = false;
+            if (!started)
+            {
+                start_time = args.time;
+                started = true;
+            }
 
-        elapsed(this);
+            if (args.time - start_time < delay)
+                return;
+
+            active = false;
+
+            elapsed(this);
+        }
+
+        public void activate()
+        {
+            active = true;
+            started = false;
+        }
+
+        public float delay { get; set; }
     }
-
-    public void activate()
-    {
-        active = true;
-        started = false;
-    }
-
-    public float delay { get; set; }
 }

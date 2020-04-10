@@ -1,5 +1,8 @@
-public enum Orientation
+namespace Engine
 {
-    VERTICAL,
-    HORIZONTAL
+    public enum Orientation
+    {
+        VERTICAL,
+        HORIZONTAL
+    }
 }
