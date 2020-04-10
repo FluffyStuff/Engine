@@ -14,7 +14,7 @@ DIRS = \
 
 PKGS = \
 	--thread \
-	--target-glib 2.32 \
+	--target-glib 2.54 \
 	--pkg gio-2.0 \
 	--pkg glew \
 	--pkg gee-0.8 \
