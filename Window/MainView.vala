@@ -129,16 +129,4 @@ namespace Engine
         public int start { get; private set; }
         public int length { get; private set; }
     }
-
-    public class DeltaArgs
-    {
-        public DeltaArgs(float time, float delta)
-        {
-            this.time = time;
-            this.delta = delta;
-        }
-
-        public float time { get; private set; }
-        public float delta { get; private set; }
-    }
 }

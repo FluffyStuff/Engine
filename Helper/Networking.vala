@@ -300,7 +300,7 @@ namespace Engine
         }
     }
 
-    public class Message : Object
+    public class Message
     {
         private uint8[] data;
 
