@@ -13,7 +13,6 @@ DIRS = \
 	Window/Controls/*.vala
 
 PKGS = \
-	--thread \
 	--target-glib 2.54 \
 	--pkg gio-2.0 \
 	--pkg glew \
