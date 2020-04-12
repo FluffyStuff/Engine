@@ -4,7 +4,6 @@ namespace Engine
 {
     public class SDLWindowTarget : Object, IWindowTarget
     {
-        private bool is_fullscreen;
         private unowned Window window;
 
         private CursorType _cursor_type;
@@ -12,11 +11,11 @@ namespace Engine
         private Cursor hover_cursor;
         private Cursor caret_cursor;
 
-        public SDLWindowTarget(void *window, bool is_fullscreen)
+        public SDLWindowTarget(void *window, ScreenTypeEnum screen_type)
         {
             this.window = (Window)window;
-            this.is_fullscreen = is_fullscreen;
-
+            this.screen_type = screen_type;
+            
             normal_cursor = new Cursor.from_system(SystemCursor.ARROW);
             hover_cursor = new Cursor.from_system(SystemCursor.HAND);
             caret_cursor = new Cursor.from_system(SystemCursor.IBEAM);
@@ -41,10 +40,19 @@ namespace Engine
             window.set_icon(img);
         }
 
-        public bool fullscreen
+        public ScreenTypeEnum screen_type
         {
-            get { return is_fullscreen; }
-            set { window.set_fullscreen((is_fullscreen = value) ? WindowFlags.FULLSCREEN_DESKTOP : 0); }
+            get
+            {
+                uint32 flags = window.get_flags();
+                if ((flags & WindowFlags.FULLSCREEN_DESKTOP) == WindowFlags.FULLSCREEN_DESKTOP) return ScreenTypeEnum.FULLSCREEN;
+                if ((flags & WindowFlags.MAXIMIZED) == WindowFlags.MAXIMIZED) return ScreenTypeEnum.MAXIMIZED;
+                return ScreenTypeEnum.WINDOWED;
+            }
+            set
+            {
+                window.set_fullscreen(value == ScreenTypeEnum.FULLSCREEN ? WindowFlags.FULLSCREEN_DESKTOP : (value == ScreenTypeEnum.MAXIMIZED ? WindowFlags.MAXIMIZED : 0));
+            }
         }
 
         public Size2i size
@@ -58,6 +66,20 @@ namespace Engine
             set
             {
                 window.set_size(value.width, value.height);
+            }
+        }
+
+        public Vec2i position
+        {
+            get
+            {
+                int x, y;
+                window.get_position(out x, out y);
+                return Vec2i(x, y);
+            }
+            set
+            {
+                window.set_position(value.x, value.y);
             }
         }
 

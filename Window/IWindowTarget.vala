@@ -2,8 +2,9 @@ namespace Engine
 {
     public interface IWindowTarget : Object
     {
-        public abstract bool fullscreen { get; set; }
+        public abstract ScreenTypeEnum screen_type { get; set; }
         public abstract Size2i size { get; set; }
+        public abstract Vec2i position { get; set; }
         public abstract void swap();
         public abstract void pump_events();
         public abstract void set_icon(string icon);

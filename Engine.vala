@@ -11,7 +11,7 @@ namespace Engine
             this.debug = debug;
         }
 
-        public abstract bool init(string window_name, int window_width, int window_height, int multisampling, bool fullscreen);
+        public abstract bool init(string window_name, Size2i window_size, Vec2i window_position, ScreenTypeEnum screen_type, int multisampling);
         public abstract void stop();
 
         // For global deinitialization
@@ -34,10 +34,10 @@ namespace Engine
         private GLib.Mutex stop_mutex = GLib.Mutex();
         private bool init_status;
         private string _window_name;
-        private int _window_width;
-        private int _window_height;
+        private Size2i _window_size;
+        private Vec2i _window_position;
         private int _multisamples;
-        private bool _fullscreen;
+        private ScreenTypeEnum _screen_type;
 
         public SDLGLEngine(bool multithread_rendering, bool debug)
         {
@@ -60,19 +60,19 @@ namespace Engine
             return true;
         }
 
-        public override bool init(string window_name, int window_width, int window_height, int multisamples, bool fullscreen)
+        public override bool init(string window_name, Size2i window_size, Vec2i window_position, ScreenTypeEnum screen_type, int multisamples)
         {
             if (!global_init())
                 return false;
 
             if (!multithread_rendering)
-                return internal_init(window_name, window_width, window_height, multisamples, fullscreen);
+                return internal_init(window_name, window_size, window_position, screen_type, multisamples);
 
             _window_name = window_name;
-            _window_width = window_width;
-            _window_height = window_height;
+            _window_size = window_size;
+            _window_position = window_position;
             _multisamples = multisamples;
-            _fullscreen = fullscreen;
+            _screen_type = screen_type;
 
             ref();
             init_mutex.lock();
@@ -85,7 +85,7 @@ namespace Engine
 
         private void init_thread()
         {
-            init_status = internal_init(_window_name, _window_width, _window_height, _multisamples, _fullscreen);
+            init_status = internal_init(_window_name, _window_size, _window_position, _screen_type, _multisamples);
             init_mutex.unlock();
 
             if (init_status)
@@ -94,9 +94,9 @@ namespace Engine
             unref();
         }
 
-        private bool internal_init(string window_name, int window_width, int window_height, int multisamples, bool fullscreen)
+        private bool internal_init(string window_name, Size2i window_size, Vec2i window_position, ScreenTypeEnum screen_type, int multisamples)
         {
-            gl_window = create_window(window_name, window_width, window_height, fullscreen, multisamples);
+            gl_window = create_window(window_name, window_size, window_position, screen_type, multisamples);
             if (gl_window == null)
             {
                 EngineLog.log(EngineLogType.ENGINE, "SDLGLEngine", "Could not create window");
@@ -118,13 +118,13 @@ namespace Engine
                 return false;
             }
 
-            window = new SDLWindowTarget(gl_window, fullscreen);
+            window = new SDLWindowTarget(gl_window, screen_type);
             renderer = new OpenGLRenderer(window, multithread_rendering, debug);
 
             return renderer.init();
         }
 
-        private Window? create_window(string name, int width, int height, bool fullscreen, int multisamples)
+        private Window? create_window(string name, Size2i size, Vec2i position, ScreenTypeEnum screen_type, int multisamples)
         {
             int s = (int)Math.pow(2, multisamples);
             SDL.GL.set_attribute(GLattr.MULTISAMPLEBUFFERS, 1);
@@ -137,10 +137,15 @@ namespace Engine
                 SDL.GL.set_attribute(GLattr.CONTEXT_FLAGS, GLcontext.DEBUG_FLAG);
 
             var flags = WindowFlags.OPENGL | WindowFlags.RESIZABLE;
-            if (fullscreen)
-                flags |= WindowFlags.FULLSCREEN;
+            if (screen_type == ScreenTypeEnum.FULLSCREEN)
+                flags |= WindowFlags.FULLSCREEN_DESKTOP;
+            else if(screen_type == ScreenTypeEnum.MAXIMIZED)
+                flags |= WindowFlags.MAXIMIZED;
+            
+            if (position.x == -1 && position.y == -1)
+                position = Vec2i(Window.POS_UNDEFINED, Window.POS_UNDEFINED);
 
-            return new Window(name, Window.POS_CENTERED, Window.POS_CENTERED, width, height, flags);
+            return new Window(name, position.x, position.y, size.width, size.height, flags);
         }
 
         private GLContext? create_context(Window window)
@@ -171,5 +176,12 @@ namespace Engine
                 initialized = false;
             }
         }
+    }
+
+    public enum ScreenTypeEnum
+    {
+        FULLSCREEN,
+        MAXIMIZED,
+        WINDOWED
     }
 }

@@ -135,8 +135,13 @@ namespace Engine
                 else if (e.type == EventType.WINDOWEVENT)
                 {
                     WindowEvent win = e.window;
-                    if (win.event == WindowEventID.RESIZED)
+                    if (win.event == WindowEventID.SIZE_CHANGED)
+                    {
+                        resized();
                         main_view.resize();
+                    }
+                    else if (win.event == WindowEventID.MOVED)
+                        moved();
                 }
             }
 
@@ -201,12 +206,15 @@ namespace Engine
         }
 
         protected virtual void shown() {}
+        protected virtual void resized() {}
+        protected virtual void moved() {}
         public RenderTarget renderer { get; private set; }
         public ResourceStore store { get; private set; }
         public MainView main_view { get; private set; }
-        public bool fullscreen { get { return window.fullscreen; } set { window.fullscreen = value; } }
+        public ScreenTypeEnum screen_type { get { return window.screen_type; } set { window.screen_type = value; } }
         public Color back_color { get; set; }
         public Size2i size { get { return window.size; } }
+        public Vec2i position { get { return window.position; } }
         public Vec2i cursor_position
         {
             get { return _cursor_position; }
