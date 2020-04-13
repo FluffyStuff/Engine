@@ -2,7 +2,8 @@
 
 engine_vapi_dir = meson.current_source_dir() / 'vapi'
 add_project_arguments(['--vapidir', engine_vapi_dir], language: 'vala')
-add_project_arguments('-DGLEW_NO_GLU', language : 'c')
+add_project_arguments('-D', get_option('buildtype').to_upper(), language: 'vala')
+add_project_arguments('-DGLEW_NO_GLU', language: 'c')
 
 cc = meson.get_compiler('c')
 valac = meson.get_compiler('vala')
