@@ -146,6 +146,14 @@ namespace Engine
             Clipboard.set_text(text);
         }
 
+        public void focus()
+        {
+            if (screen_type == ScreenTypeEnum.FULLSCREEN)
+                window.restore();
+            else
+                window.raise();
+        }
+
         public CursorType current_cursor { get; private set; }
     }
 }

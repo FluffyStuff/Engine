@@ -198,6 +198,11 @@ namespace Engine
             window.set_clipboard_text(text);
         }
 
+        public void focus()
+        {
+            window.focus();
+        }
+
         protected virtual void do_process(DeltaArgs delta) {}
 
         protected virtual bool key_press(KeyArgs key)

@@ -177,7 +177,7 @@ namespace Engine
 
     public abstract class EndControl : Control
     {
-        private RenderObject2D obj;
+        private RenderObject2D? obj;
 
         public override void added()
         {
@@ -190,9 +190,12 @@ namespace Engine
 
         public override void render(RenderState state, RenderScene2D scene)
         {
-            obj.scissor = scissor;
-            obj.scissor_box = scissor_box;
-            scene.add_object(obj);
+            if (obj != null)
+            {
+                obj.scissor = scissor;
+                obj.scissor_box = scissor_box;
+                scene.add_object(obj);
+            }
         }
 
         public override void resized()
@@ -212,7 +215,7 @@ namespace Engine
         protected virtual void on_added() {}
         //protected abstract void set_end_rect(Rectangle rect);
         //protected abstract void render_end(RenderScene2D scene);
-        protected abstract RenderObject2D get_obj();
+        protected abstract RenderObject2D? get_obj();
         public abstract Size2 end_size { get; }
     }
 }

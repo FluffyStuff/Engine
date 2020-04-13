@@ -13,7 +13,7 @@ namespace Engine
             color = Color.white();
         }
 
-        protected override RenderObject2D get_obj()
+        protected override RenderObject2D? get_obj()
         {
             return label;
         }

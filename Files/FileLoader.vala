@@ -96,7 +96,7 @@ namespace Engine
 
         public static bool exists(string name)
         {
-            return File.new_for_path(name).query_exists();
+            return name.length == 0 ? false : File.new_for_path(name).query_exists();
         }
 
         public static string[] split_string(string str, bool retain_newline = false)

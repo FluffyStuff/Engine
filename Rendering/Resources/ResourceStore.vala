@@ -115,21 +115,25 @@ namespace Engine
 
         public RenderTexture? load_texture_dir(string dir, string filename)
         {
-            ResourceCacheObject? cache = get_cache_object(dir + filename, CacheObjectType.TEXTURE);
+            return load_texture_path(dir + filename + ".png");
+        }
+
+        public RenderTexture? load_texture_path(string path)
+        {
+            ResourceCacheObject? cache = get_cache_object(path, CacheObjectType.TEXTURE);
             if (cache != null)
                 return (RenderTexture)cache.obj;
 
-            string str = dir + filename + ".png";
-            if (!FileLoader.exists(str))
+            if (!FileLoader.exists(path))
                 return null;
 
-            ImageData img = ImageLoader.load_image(str);
+            ImageData img = ImageLoader.load_image(path);
 
             InputResourceTexture tex = new InputResourceTexture(img.data, img.size);
             var handle = renderer.load_texture(tex);
 
             RenderTexture texture = new RenderTexture(handle, img.size);
-            cache_object(dir + filename, CacheObjectType.TEXTURE, texture);
+            cache_object(path, CacheObjectType.TEXTURE, texture);
 
             return texture;
         }

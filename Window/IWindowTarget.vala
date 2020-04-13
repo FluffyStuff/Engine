@@ -15,5 +15,6 @@ namespace Engine
         public abstract void set_clipboard_text(string text);
         public abstract void start_text_input();
         public abstract void stop_text_input();
+        public abstract void focus();
     }
 }

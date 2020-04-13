@@ -9,7 +9,7 @@ namespace Engine
             rectangle = new RenderRectangle2D();
         }
 
-        protected override RenderObject2D get_obj()
+        protected override RenderObject2D? get_obj()
         {
             return rectangle;
         }
