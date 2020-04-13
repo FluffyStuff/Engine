@@ -294,7 +294,7 @@ namespace Engine
 
         public void apply(Transform transform, Color color, float intensity)
         {
-            Vec3 position = transform.position;
+            Vec3 position = transform.get_full_matrix().get_position();
             glUniform3f(position_attrib, position.x, position.y, position.z);
             glUniform3f(color_attrib, color.r, color.g, color.b);
             glUniform1f(intensity_attrib, intensity);
