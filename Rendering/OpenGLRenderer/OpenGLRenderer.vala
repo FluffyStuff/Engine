@@ -5,7 +5,7 @@ namespace Engine
 {
     public class OpenGLRenderer : RenderTarget
     {
-        private const int MAX_LIGHTS = 3;
+        private const int MAX_LIGHTS = 4;
 
         private const int POSITION_ATTRIBUTE = 0;
         private const int TEXTURE_ATTRIBUTE = 1;
