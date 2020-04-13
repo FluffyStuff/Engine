@@ -19,13 +19,11 @@ engine_dependencies = [
     dependency('sfml-audio'),
     dependency('sfml-system'),
     dependency('zlib'),
-    dependency('GL', required: false),
-    dependency('appleframeworks', modules: ['Foundation', 'OpenGL'], required: false),
     cc.find_library('m', required : false),
     cc.find_library('csfml-audio'),
     cc.find_library('csfml-system'),
     valac.find_library('stb', dirs: engine_vapi_dir),
-    valac.find_library('GL', dirs: engine_vapi_dir),
+    valac.find_library('GL', dirs: engine_vapi_dir, required: false), # vapi needed for windows
 ]
 
 engine_sources = files(
