@@ -39,7 +39,7 @@ namespace Engine
             OpenGLShaderUniform alpha_uniform = new OpenGLShaderUniform("alpha", OpenGLShaderPrimitiveType.FLOAT);
             OpenGLShaderUniform target_color_uniform = new OpenGLShaderUniform("target_color", OpenGLShaderPrimitiveType.VEC4);
             OpenGLShaderUniform target_color_strength_uniform = new OpenGLShaderUniform("target_color_strength", OpenGLShaderPrimitiveType.FLOAT);
-            OpenGLShaderDefine specular_exponent_define = new OpenGLShaderDefine("specular_exponent", spec.specular_exponent.to_string());
+            OpenGLShaderDefine specular_exponent_define = new OpenGLShaderDefine("specular_exponent", spec.specular_exponent.to_string("%.6f"));
             OpenGLShaderUniform textures_uniform = new OpenGLShaderUniform("textures", OpenGLShaderPrimitiveType.SAMPLER2D)
             { array = spec.textures.to_string() };
 
@@ -282,13 +282,13 @@ namespace Engine
             if (texture == null && color == null)
                 return "vec4(0.0)";
             
-            if (texture == null || texture_strength <= 0)
-                return "(" + color + ") * " + (1 - texture_strength).to_string();
-            else if (color == null  || texture_strength >= 1)
+            if (texture == null || texture_strength <= 0.0)
+                return "(" + color + ") * " + (1.0 - texture_strength).to_string();
+            else if (color == null  || texture_strength >= 1.0)
                 return "(" + texture + ") * " + texture_strength.to_string();
 
             return 
-                "((" + color + ") * " + (1 - texture_strength).to_string() + " + " +
+                "((" + color + ") * " + (1.0 - texture_strength).to_string() + " + " +
                 "(" + texture + ") * " + texture_strength.to_string() + ")";
         }*/
 
@@ -317,11 +317,12 @@ namespace Engine
 
         private static string color_to_string(Color color)
         {
+            string format = "%.6f";
             return "vec4(" +
-                color.r.to_string() + ", " +
-                color.g.to_string() + ", " +
-                color.b.to_string() + ", " +
-                color.a.to_string() + ")";
+                color.r.to_string(format) + ", " +
+                color.g.to_string(format) + ", " +
+                color.b.to_string(format) + ", " +
+                color.a.to_string(format) + ")";
         }
 
         private string lighting_blend(string ambient, string diffuse, string specular)
@@ -340,42 +341,42 @@ namespace Engine
                 
             vec3 normal = normalize(frag_normal);
             
-            vec3 diffuse = vec3(0);//diffuse_in;//out_color.xyz * 0.02;
-            vec3 specular = vec3(0);
+            vec3 diffuse = vec3(0.0);//diffuse_in;//out_color.xyz * 0.02;
+            vec3 specular = vec3(0.0);
             vec3 c = diffuse_in.xyz;//out_color.xyz;
             vec3 cm = normalize(frag_camera_normal);
             
             for (int i = 0; i < light_count; i++)
             {
                 float intensity = light_intensity[i];
-                float lnlen = max(length(light_normals[i]), 1);
+                float lnlen = max(length(light_normals[i]), 1.0);
                 vec3 ln = normalize(light_normals[i]);
                 
-                float d = max(dot(ln, normal), 0);
-                float plus = 0;
+                float d = max(dot(ln, normal), 0.0);
+                float plus = 0.0;
                 plus += d * constant_factor;
                 plus += d / lnlen * linear_factor;
-                plus += d / pow(lnlen, 2) * quadratic_factor;
+                plus += d / pow(lnlen, 2.0) * quadratic_factor;
                 
-                diffuse += (c * (1-blend_factor) + light_colors[i] * blend_factor) * plus * intensity;
+                diffuse += (c * (1.0-blend_factor) + light_colors[i] * blend_factor) * plus * intensity;
                 
-                if (dot(ln, normal) > 0) // Only reflect on the correct side
+                if (dot(ln, normal) > 0.0) // Only reflect on the correct side
                 {
-                    float s = max(dot(cm, reflect(-ln, normal)), 0);
+                    float s = max(dot(cm, reflect(-ln, normal)), 0.0);
                     float spec = pow(s, specular_exponent);
                     
-                    float p = 0;
+                    float p = 0.0;
                     p += spec * constant_factor;
                     p += spec / lnlen * linear_factor;
-                    p += spec / pow(lnlen, 2) * quadratic_factor;
+                    p += spec / pow(lnlen, 2.0) * quadratic_factor;
                     
-                    p = max(p, 0) * intensity;
+                    p = max(p, 0.0) * intensity;
                     
-                    specular += (light_colors[i] * (1-blend_factor) * 0 + specular_in.xyz/* * blend_factor*/) * p;
+                    specular += (light_colors[i] * (1.0-blend_factor) * 0.0 + specular_in.xyz/* * blend_factor*/) * p;
                 }
             }
             
-            /*float dist = max(pow(length(frag_camera_normal) / 5, 1.0) / 10, 1);
+            /*float dist = max(pow(length(frag_camera_normal) / 5.0, 1.0) / 10.0, 1.0);
             diffuse /= dist;
             specular /= dist;*/
             
@@ -394,7 +395,7 @@ namespace Engine
             else if (type == BLEND_WITHOUT_MATERIAL_MULTIPLIER)
                 return color * color.a * (1.0 - texture_color.a)                       + texture_color * texture_color.a * material_multiplier;
             else
-                return vec4(0);
+                return vec4(0.0);
         """;
 
         private string vertex_mod_pos_code_string = """
@@ -425,7 +426,7 @@ namespace Engine
         """;
 
         private string fragment_alpha_discard_code_string = """
-            if (alpha <= 0) discard;
+            if (alpha <= 0.0) discard;
         """;
 
         private string fragment_single_texture_code_string = """
@@ -433,7 +434,7 @@ namespace Engine
         """;
 
         /*private string fragment_color_discard_code_string = """
-            if (color.a <= 0) discard;
+            if (color.a <= 0.0) discard;
         """;*/
 
         private string define_local_vars_code_string = """

@@ -456,7 +456,7 @@ namespace Engine
 
     public abstract class OpenGLShaderBuilder
     {
-        protected const int VERSION = 120;
+        protected const int VERSION = 100;
 
         protected OpenGLShaderBuilder()
         {
@@ -506,6 +506,7 @@ namespace Engine
             str.append("#version ");
             str.append(version.to_string());
             str.append("\n");
+            str.append("precision mediump float;\n");
 
             foreach (var unit in tree.get_list())
                 if (!(unit is OpenGLShaderCodeBlock))
