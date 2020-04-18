@@ -28,6 +28,7 @@ namespace Engine
             });
             
 
+            OpenGLShaderUniform light_count_float_uniform = new OpenGLShaderUniform("light_count_float", OpenGLShaderPrimitiveType.FLOAT);
             OpenGLShaderUniform light_count_uniform = new OpenGLShaderUniform("light_count", OpenGLShaderPrimitiveType.INT);
             OpenGLShaderUniform light_source_uniform = new OpenGLShaderUniform("light_source", OpenGLShaderPrimitiveType.CUSTOM)
             {
@@ -72,7 +73,7 @@ namespace Engine
             OpenGLShaderCodeBlock calculate_lighting_factor_code = new OpenGLShaderCodeBlock(calculate_lighting_factor_code_string)
             {
                 dependencies = { frag_normal_varying, frag_camera_normal_varying, light_intensity_varying, light_normals_varying, light_colors_varying,
-                specular_exponent_define, light_count_uniform }
+                specular_exponent_define, light_count_uniform, light_count_float_uniform }
             };
 
             OpenGLShaderFunction calculate_lighting_factor_function = new OpenGLShaderFunction("calculate_lighting_factor", OpenGLShaderPrimitiveType.VOID);
@@ -346,33 +347,36 @@ namespace Engine
             vec3 c = diffuse_in.xyz;//out_color.xyz;
             vec3 cm = normalize(frag_camera_normal);
             
-            for (int i = 0; i < light_count; i++)
+            for (int i = 0; i < MAX_LIGHTS; i++)
             {
-                float intensity = light_intensity[i];
-                float lnlen = max(length(light_normals[i]), 1.0);
-                vec3 ln = normalize(light_normals[i]);
-                
-                float d = max(dot(ln, normal), 0.0);
-                float plus = 0.0;
-                plus += d * constant_factor;
-                plus += d / lnlen * linear_factor;
-                plus += d / pow(lnlen, 2.0) * quadratic_factor;
-                
-                diffuse += (c * (1.0-blend_factor) + light_colors[i] * blend_factor) * plus * intensity;
-                
-                if (dot(ln, normal) > 0.0) // Only reflect on the correct side
+                if (float(i) < light_count_float)
                 {
-                    float s = max(dot(cm, reflect(-ln, normal)), 0.0);
-                    float spec = pow(s, specular_exponent);
+                    float intensity = light_intensity[i];
+                    float lnlen = max(length(light_normals[i]), 1.0);
+                    vec3 ln = normalize(light_normals[i]);
                     
-                    float p = 0.0;
-                    p += spec * constant_factor;
-                    p += spec / lnlen * linear_factor;
-                    p += spec / pow(lnlen, 2.0) * quadratic_factor;
+                    float d = max(dot(ln, normal), 0.0);
+                    float plus = 0.0;
+                    plus += d * constant_factor;
+                    plus += d / lnlen * linear_factor;
+                    plus += d / pow(lnlen, 2.0) * quadratic_factor;
                     
-                    p = max(p, 0.0) * intensity;
+                    diffuse += (c * (1.0-blend_factor) + light_colors[i] * blend_factor) * plus * intensity;
                     
-                    specular += (light_colors[i] * (1.0-blend_factor) * 0.0 + specular_in.xyz/* * blend_factor*/) * p;
+                    if (dot(ln, normal) > 0.0) // Only reflect on the correct side
+                    {
+                        float s = max(dot(cm, reflect(-ln, normal)), 0.0);
+                        float spec = pow(s, specular_exponent);
+                        
+                        float p = 0.0;
+                        p += spec * constant_factor;
+                        p += spec / lnlen * linear_factor;
+                        p += spec / pow(lnlen, 2.0) * quadratic_factor;
+                        
+                        p = max(p, 0.0) * intensity;
+                        
+                        specular += (light_colors[i] * (1.0-blend_factor) * 0.0 + specular_in.xyz) * p;
+                    }
                 }
             }
             

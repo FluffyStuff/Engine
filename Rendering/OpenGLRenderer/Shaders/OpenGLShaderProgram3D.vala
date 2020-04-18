@@ -205,7 +205,9 @@ namespace Engine
             if (spec.lighting_calculation != LightingCalculationType.NONE)
             {
                 int s = lights.size;
+                float f = lights.size;
                 apply_uniform("light_count", &s, ApplyUniformType.INT);
+                apply_uniform("light_count_float", &f, ApplyUniformType.FLOAT);
 
                 for (int i = 0; i < s && i < this.lights.length; i++)
                     this.lights[i].apply(lights[i].transform, lights[i].color, lights[i].intensity);

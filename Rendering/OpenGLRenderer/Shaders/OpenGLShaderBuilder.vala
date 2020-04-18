@@ -506,7 +506,8 @@ namespace Engine
             str.append("#version ");
             str.append(version.to_string());
             str.append("\n");
-            str.append("precision mediump float;\n");
+            if (version == 100)
+                str.append("precision mediump float;\n");
 
             foreach (var unit in tree.get_list())
                 if (!(unit is OpenGLShaderCodeBlock))
