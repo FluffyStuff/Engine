@@ -480,6 +480,9 @@ namespace Engine
 
         private void get_debug_messages()
         {
+            if (glGetDebugMessageLogARB == null)
+                return;
+                
             uint8 buffer[8192];
 
             uint sources[1];
