@@ -1,6 +1,6 @@
 #project('libengine', 'vala', 'c')
 
-engine_vapi_dir = meson.current_source_dir() / 'vapi'
+engine_vapi_dir = meson.current_source_dir() + '/vapi'
 add_project_arguments(['--vapidir', engine_vapi_dir], language: 'vala')
 add_project_arguments('-D', get_option('buildtype').to_upper(), language: 'vala')
 add_project_arguments('-DGLEW_NO_GLU', language: 'c')
@@ -18,14 +18,16 @@ engine_dependencies = [
     dependency('SDL2_image'),
     dependency('sdl2'),
     dependency('pangoft2'),
-    dependency('sfml-audio'),
-    dependency('sfml-system'),
     dependency('zlib'),
     cc.find_library('m', required : false),
     cc.find_library('csfml-audio'),
     cc.find_library('csfml-system'),
+    cc.find_library('sfml-audio'),
+    cc.find_library('sfml-system'),
+    valac.find_library('sfml-audio', dirs: engine_vapi_dir),
+    valac.find_library('sfml-system', dirs: engine_vapi_dir),
     valac.find_library('stb', dirs: engine_vapi_dir),
-    valac.find_library('GL', dirs: engine_vapi_dir, required: false), # vapi needed for windows
+    valac.find_library('gl', dirs: engine_vapi_dir), # vapi needed for windows
 ]
 
 engine_sources = files(
