@@ -28,8 +28,12 @@ engine_dependencies = [
     valac.find_library('sfml-audio', dirs: engine_vapi_dir),
     valac.find_library('sfml-system', dirs: engine_vapi_dir),
     valac.find_library('stb', dirs: engine_vapi_dir),
-    valac.find_library('gl', dirs: engine_vapi_dir), # vapi needed for windows
 ]
+
+if target_machine.system() == 'windows'
+    engine_dependencies += valac.find_library('gl', dirs: engine_vapi_dir)
+endif
+
 
 engine_sources = files(
     'Engine.vala',
