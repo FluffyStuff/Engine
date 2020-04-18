@@ -237,6 +237,6 @@ namespace Engine
 		public bool selectable { get; set; }
 		public bool visible { get; set; }
 		public Vec3 obb { get; protected set; }
-		protected ResourceStore store { get; protected set; }
+		protected weak ResourceStore store { get; protected set; }
 	}
 }

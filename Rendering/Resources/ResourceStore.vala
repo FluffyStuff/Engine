@@ -15,6 +15,11 @@ namespace Engine
             this.renderer = renderer;
         }
 
+        ~ResourceStore()
+        {
+            EngineLog.log(EngineLogType.DEBUG, "ResourceStore", "Destroying resource store");
+        }
+
         public RenderGeometry3D? load_geometry_3D(string filename, bool do_load_texture)
         {
             return load_geometry_3D_dir(MODEL_DIR, filename, do_load_texture);

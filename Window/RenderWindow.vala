@@ -14,7 +14,6 @@ namespace Engine
         {
             this.window = window;
             this.renderer = renderer;
-            store = renderer.resource_store;
         }
 
         public void show()
@@ -214,7 +213,7 @@ namespace Engine
         protected virtual void resized() {}
         protected virtual void moved() {}
         public RenderTarget renderer { get; private set; }
-        public ResourceStore store { get; private set; }
+        public ResourceStore store { get { return renderer.resource_store; } }
         public MainView main_view { get; private set; }
         public ScreenTypeEnum screen_type { get { return window.screen_type; } set { window.screen_type = value; } }
         public Color back_color { get; set; }
