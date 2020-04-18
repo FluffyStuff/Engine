@@ -6,7 +6,7 @@ namespace Engine
 
 		public static void glGenVertexArrays(int amount, uint[] vao)
 		{
-		#if MAC
+		#if DARWIN
 			GL.glGenVertexArraysAPPLE(amount, vao);
 		#else
 			GL.glGenVertexArrays(amount, vao);
@@ -15,7 +15,7 @@ namespace Engine
 
 		public static void glBindVertexArray(uint array_handle)
 		{
-		#if MAC
+		#if DARWIN
 			GL.glBindVertexArrayAPPLE(array_handle);
 		#else
 			GL.glBindVertexArray(array_handle);
@@ -24,7 +24,7 @@ namespace Engine
 
 		public static void glDeleteVertexArrays(int amount, uint[] vao)
 		{
-		#if MAC
+		#if DARWIN
 			GL.glDeleteVertexArraysAPPLE(amount, vao);
 		#else
 			GL.glDeleteVertexArrays(amount, vao);
