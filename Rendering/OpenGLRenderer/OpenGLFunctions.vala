@@ -4,6 +4,17 @@ namespace Engine
 	{
 		private OpenGLFunctions() {}
 
+		public static bool has_functions()
+		{
+			return
+			#if DARWIN
+				GL.glGenVertexArraysAPPLE
+			#else
+				GL.glGenVertexArrays
+			#endif
+			!= null;
+		}
+
 		public static void glGenVertexArrays(int amount, uint[] vao)
 		{
 		#if DARWIN

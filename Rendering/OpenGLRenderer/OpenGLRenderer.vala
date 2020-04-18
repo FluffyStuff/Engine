@@ -43,6 +43,12 @@ namespace Engine
                 return false;
             }
 
+            if (!OpenGLFunctions.has_functions())
+            {
+                EngineLog.log(EngineLogType.RENDERING, "OpenGLRenderer", "Invalid GL extension context");
+                return false;
+            }
+
             glEnable(GL_CULL_FACE);
             glEnable(GL_DEPTH_TEST);
             glDepthFunc(GL_LEQUAL);
