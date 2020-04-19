@@ -180,6 +180,11 @@ namespace Engine
         }
     }
 
+    public bool show_error_message_box(string title, string message)
+    {
+        return MessageBox.simple_show(MessageBoxFlags.ERROR, title, message, null) == 0;
+    }
+
     public enum ScreenTypeEnum
     {
         FULLSCREEN,

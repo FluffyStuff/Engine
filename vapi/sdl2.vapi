@@ -763,7 +763,7 @@ namespace SDL {
 	[CCode (cname="SDL_MessageBoxData", destroy_function="", cheader_filename="SDL2/SDL_messagebox.h")]
 	public struct MessageBoxData {
     uint32 flags;                       /**< ::SDL_MessageBoxFlags */
-    SDL.Window window;                 /**< Parent window, can be NULL */
+    SDL.Window? window;                 /**< Parent window, can be NULL */
     string title;                  /**< UTF-8 title */
     string message;                /**< UTF-8 message text */
     int numbuttons;
@@ -775,7 +775,7 @@ namespace SDL {
 	[CCode (cprefix="SDL_", cname="SDL_ShowSimpleMessageBox", cheader_filename="SDL2/SDL_messagebox.h")]
 	public class MessageBox{
 		[CCode (cname="SDL_ShowSimpleMessageBox")]
-		public static int simple_show(uint32 flags, string title, string message, SDL.Window window);
+		public static int simple_show(uint32 flags, string title, string message, SDL.Window? window);
 	
 		[CCode (cname="SDL_ShowMessageBox")]
 		public static int show(MessageBoxData data, int buttonid);
