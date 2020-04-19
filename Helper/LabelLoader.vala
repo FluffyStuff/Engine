@@ -53,6 +53,7 @@ namespace Engine
             mutex.lock();
             if (!initialized)
             {
+                EngineLog.log(EngineLogType.DEBUG, "LabelLoader.initialize", "Initializing FontConfig");
                 void *config = FcConfigCreate();
                 FcConfigAppFontAddDir(config, "./Data/Fonts");
                 FcConfigSetCurrent(config);

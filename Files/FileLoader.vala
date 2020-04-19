@@ -13,7 +13,10 @@ namespace Engine
             var file = File.new_for_path(name);
 
             if (!file.query_exists())
+            {
+                EngineLog.log(EngineLogType.DEBUG, "FileLoader.load", "File does not exist: " + name);
                 return null;
+            }
 
             ArrayList<string> lines = new ArrayList<string>();
 
@@ -37,7 +40,10 @@ namespace Engine
         {
             File file = File.new_for_path(name);
             if (!file.query_exists())
+            {
+                EngineLog.log(EngineLogType.DEBUG, "FileLoader.load_data", "File does not exist: " + name);
                 return null;
+            }
 
             try
             {
@@ -50,7 +56,10 @@ namespace Engine
 
                 return data;
             }
-            catch {}
+            catch
+            {
+                EngineLog.log(EngineLogType.ERROR, "FileLoader.load_data", "Error loading data for: " + name);
+            }
 
             return null;
         }
@@ -78,6 +87,7 @@ namespace Engine
             }
             catch
             {
+                EngineLog.log(EngineLogType.DEBUG, "FileLoader.open", "Error opening file: " + name);
                 return null;
             }
         }
@@ -138,7 +148,7 @@ namespace Engine
             }
             catch
             {
-                EngineLog.log(EngineLogType.DEBUG, "FileLoader", "Could not get files in " + name);
+                EngineLog.log(EngineLogType.DEBUG, "FileLoader.get_files_in_dir", "Could not get files in: " + name);
             }
 
             return files.to_array();

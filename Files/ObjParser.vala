@@ -7,9 +7,13 @@ namespace Engine
         // TODO: Add curve parsing
         public static GeometryData? parse(string path, string filename)
         {
-            string[]? file = FileLoader.load(path + filename + ".obj");
+            string p = path + filename + ".obj";
+            string[]? file = FileLoader.load(p);
             if (file == null)
+            {
+                EngineLog.log(EngineLogType.DEBUG, "ObjParser.parse", "Could not load file: " + p);
                 return null;
+            }
             
             ObjInfo info = parse_data(file);
 
@@ -167,6 +171,7 @@ namespace Engine
             }
             catch (ParsingError e)
             {
+                EngineLog.log(EngineLogType.ERROR, "ObjParser.process_model_data", "Error while parsing " + name + ": " + e.message);
                 return null;
             }
         }

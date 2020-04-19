@@ -117,6 +117,7 @@ namespace Engine
 
         public void stop()
         {
+			EngineLog.log(EngineLogType.DEBUG, "RenderTarget.stop", "Stopping render target");
             running = false;
         }
 

@@ -24,8 +24,15 @@ namespace Engine
 
 		public World(View3D parent, ResourceStore store)
 		{
+			EngineLog.log(EngineLogType.DEBUG, "World", "Creating world object");
+			
 			this.parent = parent;
 			world_transform = new MainWorldObject(store);
+		}
+
+		~World()
+		{
+			EngineLog.log(EngineLogType.DEBUG, "World", "Destroying world object");
 		}
 
 		public void process(DeltaArgs args)

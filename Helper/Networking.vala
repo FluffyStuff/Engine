@@ -101,6 +101,8 @@ namespace Engine
 
         private void host_worker()
         {
+            EngineLog.log(EngineLogType.NETWORK, "Networking.host_worker", "Starting server worker");
+
             try
             {
                 while (true)
@@ -115,10 +117,13 @@ namespace Engine
                     }
                     mutex.unlock();
 
+                    EngineLog.log(EngineLogType.NETWORK, "Networking.host_worker", "Adding new connection");
                     add_connection(connection);
                 }
             }
             catch { }
+
+            EngineLog.log(EngineLogType.NETWORK, "Networking.host_worker", "Closing server worker");
 
             server.close();
             listening = false;
@@ -150,6 +155,8 @@ namespace Engine
 
         public static Connection? join(string addr, uint16 port)
         {
+            EngineLog.log(EngineLogType.NETWORK, "Networking.join", "Joining server: " + addr + ":" + port.to_string());
+
             try
             {
                 Resolver resolver = Resolver.get_default();
@@ -163,10 +170,12 @@ namespace Engine
                 Connection connection = new Connection(conn);
                 connection.start();
 
+                EngineLog.log(EngineLogType.NETWORK, "Networking.join", "Successfully joined server");
                 return connection;
             }
             catch
             {
+                EngineLog.log(EngineLogType.NETWORK, "Networking.join", "Failed to join server");
                 return null;
             }
         }
@@ -273,7 +282,7 @@ namespace Engine
                     uint32 length = input.read_uint32();
                     if (length > MAX_MESSAGE_LEN)
                     {
-                        EngineLog.log(EngineLogType.NETWORK, "Networking", "Message length exceeds maximum, dropping connection");
+                        EngineLog.log(EngineLogType.NETWORK, "Networking.reading_worker", "Message length exceeds maximum, dropping connection");
                         break;
                     }
 
@@ -286,13 +295,19 @@ namespace Engine
                     message_received(this, new Message(buffer));
                 }
             }
-            catch {}
+            catch (Error e)
+            {
+                EngineLog.log(EngineLogType.NETWORK, "Networking.reading_worker", "Exception during read: " + e.message);
+            }
 
             try
             {
                 connection.close();
             }
-            catch {}
+            catch (Error e)
+            {
+                EngineLog.log(EngineLogType.NETWORK, "Networking.reading_worker", "Exception during close: " + e.message);
+            }
 
             closed(this);
 
@@ -699,19 +714,19 @@ namespace Engine
                 int count = data.get_int();
                 if (count == 0)
                 {
-                    EngineLog.log(EngineLogType.NETWORK, "Serializable", "No root name, dropping message");
+                    EngineLog.log(EngineLogType.NETWORK, "Serializable.deserialize", "No root name, dropping message");
                     return null;
                 }
 
                 if (count > MAX_LIST_LENGTH)
                 {
-                    EngineLog.log(EngineLogType.NETWORK, "Serializable", "String table length exceeds maximum, dropping message");
+                    EngineLog.log(EngineLogType.NETWORK, "Serializable.deserialize", "String table length exceeds maximum, dropping message");
                     return null;
                 }
 
                 if (count < 0)
                 {
-                    EngineLog.log(EngineLogType.NETWORK, "Serializable", "String table length is negative, dropping message");
+                    EngineLog.log(EngineLogType.NETWORK, "Serializable.deserialize", "String table length is negative, dropping message");
                     return null;
                 }
 
@@ -726,7 +741,7 @@ namespace Engine
             }
             catch (Error e)
             {
-                EngineLog.log(EngineLogType.NETWORK, "Serializable", "Error parsing message: " + e.message);
+                EngineLog.log(EngineLogType.NETWORK, "Serializable.deserialize", "Error parsing message: " + e.message);
                 return null;
             }
         }

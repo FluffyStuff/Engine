@@ -14,6 +14,8 @@ namespace Engine
         public static void set_log_callback(LogCallback? callback)
         {
             log_callback = callback;
+
+            log(EngineLogType.DEBUG, "EngineLog", "Engine log installed");
         }
 
         public static void log(EngineLogType log_type, string origin, string message)
@@ -30,6 +32,7 @@ namespace Engine
 
     public enum EngineLogType
     {
+        ERROR,
         ENGINE,
         NETWORK,
         RENDERING,

@@ -16,7 +16,10 @@ namespace Engine
             mutex.unlock();
             
             if (image == null)
+            {
+                EngineLog.log(EngineLogType.ERROR, "ImageLoadWarp.load_image", "Error while loading: " + name);
                 return null;
+            }
 
             uchar[] data = new uchar[width * height * 4];
             Memory.copy(data, image, sizeof(uchar) * data.length);
