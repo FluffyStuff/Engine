@@ -5,10 +5,11 @@ namespace Engine
 {
     public abstract class Engine : Object
     {
-        Engine(bool multithread_rendering, bool debug)
+        Engine(bool multithread_rendering, string version_string, bool debug)
         {
             this.multithread_rendering = multithread_rendering;
             this.debug = debug;
+            this.version_string = version_string;
         }
 
         public abstract bool init(string window_name, Size2i window_size, Vec2i window_position, ScreenTypeEnum screen_type, int multisampling);
@@ -19,6 +20,7 @@ namespace Engine
 
         public bool multithread_rendering { get; private set; }
         public bool debug { get; private set; }
+        public string version_string { get; private set; }
         public IWindowTarget window { get; protected set; }
         public RenderTarget renderer { get; protected set; }
     }
@@ -39,9 +41,9 @@ namespace Engine
         private int _multisamples;
         private ScreenTypeEnum _screen_type;
 
-        public SDLGLEngine(bool multithread_rendering, bool debug)
+        public SDLGLEngine(bool multithread_rendering, string version_string, bool debug)
         {
-            base(multithread_rendering, debug);
+            base(multithread_rendering, version_string, debug);
         }
 
         private bool global_init()
@@ -119,7 +121,7 @@ namespace Engine
             }
 
             window = new SDLWindowTarget(gl_window, screen_type);
-            renderer = new OpenGLRenderer(window, multithread_rendering, debug);
+            renderer = new OpenGLRenderer(window, multithread_rendering, version_string, debug);
 
             return renderer.init();
         }

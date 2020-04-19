@@ -23,9 +23,9 @@ namespace Engine
         private int debug_3D_model_switches;
         private int debug_scene_switches;
 
-        public OpenGLRenderer(IWindowTarget window, bool multithread_rendering, bool debug)
+        public OpenGLRenderer(IWindowTarget window, bool multithread_rendering, string version_string, bool debug)
         {
-            base(window, multithread_rendering, debug);
+            base(window, multithread_rendering, version_string, debug);
             store = new ResourceStore(this);
         }
 

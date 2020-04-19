@@ -13,6 +13,7 @@ namespace Engine
         private MainView debug_main_view;
         private DebugView debug_view;
         private DebugInfo? debug_info;
+        private string debug_version_string;
         private int debug_external_fps = 1;
         private int debug_internal_fps = 1;
         private int debug_new_external_fps = 1;
@@ -38,10 +39,11 @@ namespace Engine
         protected IWindowTarget window;
         protected ResourceStore store;
 
-        protected RenderTarget(IWindowTarget window, bool multithread_rendering, bool debug)
+        protected RenderTarget(IWindowTarget window, bool multithread_rendering, string debug_version_string, bool debug)
         {
             this.window = window;
             this.multithread_rendering = multithread_rendering;
+            this.debug_version_string = debug_version_string;
             this.debug = debug;
             anisotropic_filtering = true;
             v_sync = saved_v_sync;
@@ -390,6 +392,7 @@ namespace Engine
         {
             string[] strings =
             {
+                "Version: " + debug_version_string,
                 "FPS: " + debug_external_fps.to_string(),
                 "Frame time: " + (1000.0f / debug_external_fps).to_string() + "ms",
                 "CPS: " + debug_internal_fps.to_string(),
