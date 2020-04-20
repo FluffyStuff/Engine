@@ -7,7 +7,7 @@ namespace Engine
         // TODO: Add curve parsing
         public static GeometryData? parse(string path, string filename)
         {
-            string p = path + filename + ".obj";
+            string p = GLib.Path.build_filename(path, filename + ".obj");
             string[]? file = FileLoader.load(p);
             if (file == null)
             {
@@ -20,7 +20,7 @@ namespace Engine
             ArrayList<MaterialData> mats = new ArrayList<MaterialData>();
 
             foreach (string mat in info.materials)
-                mats.add_all(load_material(path + mat));
+                mats.add_all(load_material(GLib.Path.build_filename(path, mat)));
 
             return new GeometryData(info.models, mats);
         }

@@ -27,7 +27,7 @@ namespace Engine
 
         public RenderGeometry3D? load_geometry_3D_dir(string dir, string filename, bool do_load_texture)
         {
-            ResourceCacheObject? cache = get_cache_object(dir + filename, CacheObjectType.GEOMETRY);
+            ResourceCacheObject? cache = get_cache_object(GLib.Path.build_filename(dir, filename), CacheObjectType.GEOMETRY);
             if (cache != null)
                 return (RenderGeometry3D)((RenderGeometry3D)cache.obj).copy();
 
@@ -75,7 +75,7 @@ namespace Engine
             }
 
             RenderGeometry3D geometry = new RenderGeometry3D.with_objects(objects);
-            cache_object(dir + filename, CacheObjectType.GEOMETRY, geometry.copy());
+            cache_object(GLib.Path.build_filename(dir, filename), CacheObjectType.GEOMETRY, geometry.copy());
 
             return geometry;
         }
@@ -120,7 +120,7 @@ namespace Engine
 
         public RenderTexture? load_texture_dir(string dir, string filename)
         {
-            return load_texture_path(dir + filename + ".png");
+            return load_texture_path(GLib.Path.build_filename(dir, filename + ".png"));
         }
 
         public RenderTexture? load_texture_path(string path)
@@ -266,9 +266,9 @@ namespace Engine
 
         public AudioPlayer audio_player { get { return audio; } }
 
-        private const string DATA_DIR = "./Data/";
-        protected const string MODEL_DIR = DATA_DIR + "Models/";
-        protected const string TEXTURE_DIR = DATA_DIR + "Textures/";
+        private const string DATA_DIR = "Data";
+        protected string MODEL_DIR = GLib.Path.build_filename(DATA_DIR, "Models");
+        protected string TEXTURE_DIR = GLib.Path.build_filename(DATA_DIR, "Textures");
 
         private class ResourceCacheObject
         {

@@ -6,17 +6,68 @@ namespace Engine
     {
         private const int MAX_SIZE = 10 * 1024 * 1024; // 10 MiB
 
+        private static ArrayList<string>? search_paths;
+
         private FileLoader() {}
+
+        public static void init()
+        {
+            if (search_paths == null)
+                search_paths = new ArrayList<string>();
+        }
+
+        public static string? find_file(string? name)
+        {
+            if (name == null)
+                return null;
+
+            if (File.new_for_path(name).query_exists())
+                return name;
+            
+            foreach (string path in search_paths)
+            {
+                string p = GLib.Path.build_filename(path, name);
+                if (File.new_for_path(p).query_exists())
+                    return p;
+            }
+
+            return null;
+        }
+
+        public static string? find_directory(string? name)
+        {
+            if (name == null)
+                return null;
+
+            foreach (string path in search_paths)
+            {
+                string p = GLib.Path.build_filename(path, name);
+                if (GLib.FileUtils.test(p, GLib.FileTest.IS_DIR))
+                    return p;
+            }
+
+            return null;
+        }
+
+        public static void add_search_path(string? path)
+        {
+            if (path == null || path.strip().length == 0 || search_paths.contains(path))
+                return;
+            
+            search_paths.add(path);
+            EngineLog.log(EngineLogType.DEBUG, "FileLoader.add_search_path", "Adding path: " + path);
+        }
 
         public static string[]? load(string name)
         {
-            var file = File.new_for_path(name);
-
-            if (!file.query_exists())
+            string? path = find_file(name);
+            if (path == null)
             {
                 EngineLog.log(EngineLogType.DEBUG, "FileLoader.load", "File does not exist: " + name);
                 return null;
             }
+
+            var file = File.new_for_path(path);
 
             ArrayList<string> lines = new ArrayList<string>();
 
@@ -38,12 +89,14 @@ namespace Engine
 
         public static uint8[]? load_data(string name)
         {
-            File file = File.new_for_path(name);
-            if (!file.query_exists())
+            string? path = find_file(name);
+            if (path == null)
             {
-                EngineLog.log(EngineLogType.DEBUG, "FileLoader.load_data", "File does not exist: " + name);
+                EngineLog.log(EngineLogType.DEBUG, "FileLoader.load", "File does not exist: " + name);
                 return null;
             }
+
+            var file = File.new_for_path(path);
 
             try
             {
@@ -104,9 +157,9 @@ namespace Engine
             return true;
         }
 
-        public static bool exists(string name)
+        public static bool exists(string? name)
         {
-            return name.length == 0 ? false : File.new_for_path(name).query_exists();
+            return name != null && name.length != 0 && name != "." && find_file(name) != null;
         }
 
         public static string[] split_string(string str, bool retain_newline = false)
@@ -126,8 +179,11 @@ namespace Engine
             return ret;
         }
 
-        public static string[] get_files_in_dir(string name)
+        public static string[] get_files_in_dir(string? name)
         {
+            if (name == null)
+                return new string[0];
+
             ArrayList<string> files = new ArrayList<string>();
 
             try

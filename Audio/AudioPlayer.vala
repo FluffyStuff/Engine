@@ -13,7 +13,7 @@ namespace Engine
         {
             mutex.lock();
 
-            string n = "Data/Audio/Sounds/" + name + ".wav";
+            string n = FileLoader.find_file(GLib.Path.build_filename("Data", "Audio", "Sounds", name + ".wav"));
 
             foreach (Sound sound in sounds)
                 if (sound.name == n)
@@ -33,7 +33,7 @@ namespace Engine
 
         public Music load_music(string name)
         {
-            return new Music("Data/Audio/Music/" + name);
+            return new Music(FileLoader.find_file(GLib.Path.build_filename("Data", "Audio", "Music", name)));
         }
 
         public bool muted

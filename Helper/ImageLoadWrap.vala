@@ -11,13 +11,20 @@ namespace Engine
         {
             int width, height;
 
+            string? file = FileLoader.find_file(name);
+            if (file == null)
+            {
+                EngineLog.log(EngineLogType.ERROR, "ImageLoadWrap.load_image", "Could not find file: " + name);
+                return null;
+            }
+
             mutex.lock();
-            uchar* image = stb.load(name, out width, out height);
+            uchar* image = stb.load(file, out width, out height);
             mutex.unlock();
             
             if (image == null)
             {
-                EngineLog.log(EngineLogType.ERROR, "ImageLoadWarp.load_image", "Error while loading: " + name);
+                EngineLog.log(EngineLogType.ERROR, "ImageLoadWrap.load_image", "Error while loading: " + file);
                 return null;
             }
 

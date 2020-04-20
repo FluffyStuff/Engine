@@ -55,8 +55,16 @@ namespace Engine
             {
                 EngineLog.log(EngineLogType.DEBUG, "LabelLoader.initialize", "Initializing FontConfig");
                 void *config = FcConfigCreate();
-                FcConfigAppFontAddDir(config, "./Data/Fonts");
-                FcConfigSetCurrent(config);
+                string? fontsDir = FileLoader.find_directory(GLib.Path.build_filename("Data", "Fonts"));
+                if (fontsDir == null)
+                {
+                    EngineLog.log(EngineLogType.ERROR, "LabelLoader.initialize", "Could not find fonts directory");
+                }
+                else
+                {
+                    FcConfigAppFontAddDir(config, fontsDir);
+                    FcConfigSetCurrent(config);
+                }
                 map = pango_ft2_font_map_new();
                 initialized = true;
             }
