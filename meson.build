@@ -17,16 +17,11 @@ engine_dependencies = [
     dependency('glew'),
     dependency('gl'),
     dependency('SDL2_image'),
+    dependency('sdl2_mixer'),
     dependency('sdl2'),
     dependency('pangoft2'),
     dependency('zlib'),
     cc.find_library('m', required : false),
-    cc.find_library('csfml-audio'),
-    cc.find_library('csfml-system'),
-    cc.find_library('sfml-audio'),
-    cc.find_library('sfml-system'),
-    valac.find_library('sfml-audio', dirs: engine_vapi_dir),
-    valac.find_library('sfml-system', dirs: engine_vapi_dir),
     valac.find_library('stb', dirs: engine_vapi_dir),
 ]
 
