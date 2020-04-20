@@ -17,7 +17,7 @@ engine_dependencies = [
     dependency('glew'),
     dependency('gl'),
     dependency('SDL2_image'),
-    dependency('sdl2_mixer'),
+    dependency('SDL2_mixer'),
     dependency('sdl2'),
     dependency('pangoft2'),
     dependency('zlib'),
