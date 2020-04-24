@@ -28,6 +28,12 @@ namespace Engine
             curve = new LinearCurve();
         }
 
+        public Animation.preset(float value)
+        {
+            times = new AnimationTime(0, value, 0);
+            curve = new LinearCurve();
+        }
+
         public void process(DeltaArgs delta)
         {
             if (done)
