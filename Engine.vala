@@ -184,11 +184,4 @@ namespace Engine
     {
         return MessageBox.simple_show(MessageBoxFlags.ERROR, title, message, null) == 0;
     }
-
-    public enum ScreenTypeEnum
-    {
-        FULLSCREEN,
-        MAXIMIZED,
-        WINDOWED
-    }
 }

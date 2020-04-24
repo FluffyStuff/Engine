@@ -59,6 +59,7 @@ engine_sources = files(
     'Properties/Quat.vala',
     'Properties/Ray.vala',
     'Properties/Rectangle.vala',
+    'Properties/ScreenTypeEnum.vala',
     'Properties/Size2.vala',
     'Properties/Size2i.vala',
     'Properties/Transform.vala',
