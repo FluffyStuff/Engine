@@ -15,7 +15,6 @@ engine_dependencies = [
     dependency('gee-0.8'),
     dependency('gtk+-3.0'),
     dependency('glew'),
-    dependency('gl'),
     dependency('SDL2_image'),
     dependency('SDL2_mixer'),
     dependency('sdl2'),
@@ -26,7 +25,10 @@ engine_dependencies = [
 ]
 
 if target_machine.system() == 'windows'
+    engine_dependencies += cc.find_library('opengl32')
     engine_dependencies += valac.find_library('gl', dirs: engine_vapi_dir)
+else
+    engine_dependencies += dependency('gl')
 endif
 
 
