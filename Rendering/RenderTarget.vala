@@ -431,8 +431,8 @@ namespace Engine
         {
             view_angle *= (float)Math.PI / 180 / 2;
             
-            float z_near  = 0.01f;
-            float z_far   =   600;
+            float z_near  = 1;
+            float z_far   = 1000;
             float z_plus  = z_far + z_near;
             float z_minus = z_far - z_near;
             float z_mul   = z_far * z_near;
